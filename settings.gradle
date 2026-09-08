@@ -1,0 +1,3 @@
+rootProject.name = 'website-kim-b-simple'
+include 'backend-springboot'
+include 'frontend-react'

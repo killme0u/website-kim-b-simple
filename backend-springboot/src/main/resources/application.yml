@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: board-backend
+  datasource:
+    url: jdbc:postgresql://192.168.29.124:5432/board_db
+    username: board_user
+    password: board_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    clean-disabled: false
+    clean-on-validation-error: true
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+app:
+  storage:
+    root: ./uploads
+  captcha:
+    mode: ${CAPTCHA_MODE:fake}
+    endpoint: ${CAPTCHA_ENDPOINT:}
+    secret: ${CAPTCHA_SECRET:}
+    expected-token: ${CAPTCHA_EXPECTED_TOKEN:dev-captcha}
+    timeout: ${CAPTCHA_TIMEOUT:3s}

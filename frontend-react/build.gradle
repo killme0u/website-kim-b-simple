@@ -1,0 +1,32 @@
+plugins {
+    id 'base'
+    id 'com.github.node-gradle.node' version '7.1.0'
+}
+
+node {
+    version = '22.20.0'
+    download = true
+    nodeProjectDir = layout.projectDirectory
+}
+
+def distDir = layout.buildDirectory.dir('dist')
+
+def buildFrontend = tasks.register('buildFrontend',
+        com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn tasks.npmInstall
+    args = ['run', 'build']
+    inputs.dir('src').withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files('package.json', 'package-lock.json', 'vite.config.ts', 'tsconfig.json')
+    outputs.dir(distDir)
+    outputs.cacheIf { true }
+}
+
+configurations {
+    frontendAssets { canBeConsumed = true; canBeResolved = false }
+}
+
+artifacts {
+    frontendAssets(distDir.get().asFile) { builtBy buildFrontend }
+}
+
+tasks.named('assemble') { dependsOn buildFrontend }
