@@ -10,14 +10,22 @@
   * 게시물 및 댓글 `ON CONFLICT DO NOTHING` 기반 원자적 조회수 증가 기능
   * 로컬 스토리지를 이용한 파일 업로드 및 다운로드 기능 (보안 취약점 방어)
 * **Phase 6~7 (React & UX)**:
-  * React, Vite, Tailwind CSS, DaisyUI, Zustand 사용
+  * React, Vite, Tailwind CSS, COSS UI, Zustand 사용
   * 마크다운 렌더링 지원 (`react-markdown`, `@tailwindcss/typography`)
   * SPA 라우팅 및 폼 기반 로그인 연동
 
 ## 기술 스택
 - **Backend**: Java 25, Spring Boot 4.1.1, Spring Data JPA, Spring Security, Flyway
-- **Frontend**: TypeScript, React 19, Vite, Tailwind CSS 3, DaisyUI 4, Zustand
+- **Frontend**: TypeScript, React 19, Vite, Tailwind CSS 3, COSS UI, Zustand
 - **Database**: PostgreSQL 15
+
+### 프론트엔드 - COSS UI
+
+```shell
+cd frontend-react
+npx shadcn@latest init @coss/style
+```
+
 
 ## 시작하기
 

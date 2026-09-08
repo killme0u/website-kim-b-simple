@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/axios';
-import { Button } from '../shared/ui';
+import { Button } from '@/shared/ui';
 
 export const RootLayout: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthStore();
