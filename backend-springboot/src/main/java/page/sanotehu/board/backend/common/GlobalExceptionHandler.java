@@ -26,7 +26,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> onDenied(AccessDeniedException e) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiError.of("FORBIDDEN", "권한이 없거나 비밀번호가 일치하지 않습니다."));
+                .body(ApiError.of("FORBIDDEN", e.getMessage() != null
+                        ? e.getMessage()
+                        : "권한이 없거나 비밀번호가 일치하지 않습니다."));
     }
 
     @ExceptionHandler(UnsupportedFileTypeException.class)

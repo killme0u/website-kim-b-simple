@@ -1,37 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { api } from '../lib/axios';
-import { Button, Card, Input } from '../shared/ui';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { api, errorMessage, isUnauthorized } from '../lib/axios';
+import { useAuthStore } from '../store/authStore';
+import { LoginRequired } from '../components/LoginRequired';
+import { Alert, Button, Card, Input } from '../shared/ui';
+import type { Board, PageResponse, PostListItem } from '../types';
 
-export const BoardPage: React.FC = () => {
+const MEMBERS_ONLY_MESSAGE = '회원 전용 게시판입니다. 로그인 후 이용해 주세요.';
+
+export function BoardPage() {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const page = Number(searchParams.get('page') || 0);
-  const queryKeyword = searchParams.get('q') || '';
-  const [board, setBoard] = useState<any>(null);
-  const [posts, setPosts] = useState<any[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
+  const page = Number(searchParams.get('page') ?? 0);
+  const queryKeyword = searchParams.get('q') ?? '';
   const [keyword, setKeyword] = useState(queryKeyword);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
 
-  useEffect(() => {
-    api.get(`/boards/${slug}`).then(res => setBoard(res.data)).catch(console.error);
-  }, [slug]);
+  const boardQuery = useQuery({
+    queryKey: ['board', slug],
+    queryFn: async () => (await api.get<Board>(`/boards/${slug}`)).data,
+  });
 
-  useEffect(() => {
-    api.get(`/boards/${slug}/posts`, { params: { page, size: 10, keyword: queryKeyword } })
-      .then(res => {
-        setPosts(res.data.content);
-        setTotalPages(res.data.totalPages);
+  const postsQuery = useQuery({
+    queryKey: ['posts', slug, page, queryKeyword],
+    queryFn: async () => (
+      await api.get<PageResponse<PostListItem>>(`/boards/${slug}/posts`, {
+        params: { page, size: 10, keyword: queryKeyword },
       })
-      .catch(console.error);
-  }, [slug, page, queryKeyword]);
+    ).data,
+    enabled: boardQuery.isSuccess,
+    placeholderData: keepPreviousData,
+  });
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearch = (event: FormEvent) => {
+    event.preventDefault();
     setSearchParams(keyword ? { q: keyword, page: '0' } : { page: '0' });
   };
 
-  if (!board) return <p className="text-sm text-slate-500">게시판을 불러오는 중입니다...</p>;
+  // 회원 전용 게시판(Q&A·자료실)에 비로그인으로 들어오면 서버가 401을 돌려준다.
+  if (isUnauthorized(boardQuery.error)) {
+    return <LoginRequired message={errorMessage(boardQuery.error, MEMBERS_ONLY_MESSAGE)} />;
+  }
+  if (boardQuery.isError) {
+    return <Alert tone="error">{errorMessage(boardQuery.error, '게시판을 불러오지 못했습니다.')}</Alert>;
+  }
+  if (!boardQuery.data) {
+    return <p className="text-sm text-slate-500">게시판을 불러오는 중입니다...</p>;
+  }
+
+  const board = boardQuery.data;
+  const posts = postsQuery.data?.content ?? [];
+  const totalPages = Math.max(postsQuery.data?.totalPages ?? 1, 1);
+  const canWrite = !board.requiresAuthToWrite || isAuthenticated;
 
   return (
     <div className="space-y-6">
@@ -40,7 +61,11 @@ export const BoardPage: React.FC = () => {
           <p className="text-sm font-semibold uppercase tracking-wider text-indigo-600">Board</p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">{board.name}</h1>
         </div>
-        <Link to={`/boards/${slug}/posts/new`}><Button size="sm">글쓰기</Button></Link>
+        {canWrite ? (
+          <Link to={`/boards/${slug}/posts/new`}><Button size="sm">글쓰기</Button></Link>
+        ) : (
+          <Link to="/login"><Button size="sm" variant="outline">로그인 후 글쓰기</Button></Link>
+        )}
       </div>
 
       <form onSubmit={handleSearch} className="flex gap-2">
@@ -49,10 +74,14 @@ export const BoardPage: React.FC = () => {
           placeholder="검색어 입력..."
           className="flex-1"
           value={keyword}
-          onChange={e => setKeyword(e.target.value)}
+          onChange={event => setKeyword(event.target.value)}
         />
         <Button type="submit" variant="secondary" size="sm">검색</Button>
       </form>
+
+      {postsQuery.isError && (
+        <Alert tone="error">{errorMessage(postsQuery.error, '게시글 목록을 불러오지 못했습니다.')}</Alert>
+      )}
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
@@ -107,4 +136,4 @@ export const BoardPage: React.FC = () => {
       </div>
     </div>
   );
-};
+}

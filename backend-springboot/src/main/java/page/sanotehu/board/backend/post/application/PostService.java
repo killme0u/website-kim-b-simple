@@ -3,7 +3,6 @@ package page.sanotehu.board.backend.post.application;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +21,6 @@ import page.sanotehu.board.backend.post.domain.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +36,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public Page<PostListItemResponse> listPosts(String boardSlug, String keyword, Pageable pageable, CustomUserDetails user) {
         Board board = boardRepository.findBySlug(boardSlug).orElseThrow();
-        Optional<Member> actor = Optional.ofNullable(user != null ? user.getMember() : null);
+        Optional<Member> actor = actorOf(user);
         board.checkReadable(actor);
         return postRepository.search(boardSlug, keyword, pageable).map(PostListItemResponse::from);
     }
@@ -46,7 +44,7 @@ public class PostService {
     @Transactional
     public PostResponse getPost(Long id, CustomUserDetails user) {
         Post post = postRepository.findById(id).filter(p -> p.getDeletedAt() == null).orElseThrow();
-        Optional<Member> actor = Optional.ofNullable(user != null ? user.getMember() : null);
+        Optional<Member> actor = actorOf(user);
         post.getBoard().checkReadable(actor);
 
         if (actor.isPresent()) {
@@ -68,7 +66,7 @@ public class PostService {
                 .mediaKind(a.getMediaKind())
                 .byteSize(a.getByteSize())
                 .build())
-            .collect(Collectors.toList());
+            .toList();
 
         return PostResponse.from(post, memberId, isAdmin, atDtos);
     }
@@ -76,7 +74,7 @@ public class PostService {
     @Transactional
     public Long createPost(String boardSlug, PostCommand cmd, CustomUserDetails user) {
         Board board = boardRepository.findBySlug(boardSlug).orElseThrow();
-        Optional<Member> actor = Optional.ofNullable(user != null ? user.getMember() : null);
+        Optional<Member> actor = actorOf(user);
         board.checkWritable(actor);
 
         Post post = actor.map(m -> Post.member(board, m, cmd.getTitle(), cmd.getContent()))
@@ -95,24 +93,14 @@ public class PostService {
     @Transactional
     public void updatePost(Long id, PostUpdateCommand cmd, CustomUserDetails user) {
         Post post = postRepository.findById(id).filter(p -> p.getDeletedAt() == null).orElseThrow();
-        Optional<Member> actor = Optional.ofNullable(user != null ? user.getMember() : null);
-        try {
-            post.checkEditable(actor, cmd.getGuestPassword(), encoder);
-        } catch (RuntimeException e) {
-            throw new AccessDeniedException(e.getMessage());
-        }
+        post.checkEditable(actorOf(user), cmd.getGuestPassword(), encoder);
         post.update(cmd.getTitle(), cmd.getContent());
     }
 
     @Transactional
     public void deletePost(Long id, String guestPassword, CustomUserDetails user) {
         Post post = postRepository.findById(id).filter(p -> p.getDeletedAt() == null).orElseThrow();
-        Optional<Member> actor = Optional.ofNullable(user != null ? user.getMember() : null);
-        try {
-            post.checkEditable(actor, guestPassword, encoder);
-        } catch (RuntimeException e) {
-            throw new AccessDeniedException(e.getMessage());
-        }
+        post.checkEditable(actorOf(user), guestPassword, encoder);
         post.softDelete();
     }
 
@@ -128,5 +116,9 @@ public class PostService {
             likeRepository.save(new PostLike(id, user.getId()));
             postRepository.increaseLikeCount(id);
         }
+    }
+
+    private Optional<Member> actorOf(CustomUserDetails user) {
+        return Optional.ofNullable(user).map(CustomUserDetails::getMember);
     }
 }

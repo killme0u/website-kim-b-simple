@@ -1,13 +1,5 @@
 import { create } from 'zustand';
-
-export interface User {
-  id: number;
-  username: string;
-  name: string;
-  email: string;
-  role: 'MEMBER' | 'ADMIN';
-  mustChangePassword?: boolean;
-}
+import type { User } from '../types';
 
 interface AuthState {
   user: User | null;
@@ -17,14 +9,14 @@ interface AuthState {
   logout: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isAdmin: false,
-  setUser: (user) => set({ 
-    user, 
-    isAuthenticated: !!user,
-    isAdmin: user?.role === 'ADMIN'
+const signedOut = { user: null, isAuthenticated: false, isAdmin: false } as const;
+
+export const useAuthStore = create<AuthState>(set => ({
+  ...signedOut,
+  setUser: user => set({
+    user,
+    isAuthenticated: user !== null,
+    isAdmin: user?.role === 'ADMIN',
   }),
-  logout: () => set({ user: null, isAuthenticated: false, isAdmin: false }),
+  logout: () => set(signedOut),
 }));

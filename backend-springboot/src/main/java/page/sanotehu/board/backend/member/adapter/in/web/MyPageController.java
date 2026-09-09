@@ -11,6 +11,7 @@ import page.sanotehu.board.backend.comment.adapter.in.web.dto.CommentResponse;
 import page.sanotehu.board.backend.comment.domain.CommentRepository;
 import page.sanotehu.board.backend.common.AuthenticationRequiredException;
 import page.sanotehu.board.backend.member.application.CustomUserDetails;
+import page.sanotehu.board.backend.member.domain.MemberRole;
 import page.sanotehu.board.backend.post.adapter.in.web.dto.PostListItemResponse;
 import page.sanotehu.board.backend.post.domain.PostRepository;
 
@@ -36,7 +37,7 @@ public class MyPageController {
             Pageable pageable,
             @AuthenticationPrincipal CustomUserDetails user) {
         if (user == null) throw new AuthenticationRequiredException("Login required");
-        boolean isAdmin = user.getMember().getRole().name().equals("ADMIN");
+        boolean isAdmin = user.getMember().getRole() == MemberRole.ADMIN;
         return commentRepository.findByMemberIdAndDeletedAtIsNullOrderByIdDesc(user.getId(), pageable)
                 .map(c -> CommentResponse.from(c, user.getId(), isAdmin));
     }

@@ -1,4 +1,3 @@
-import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { RootLayout } from './layouts/RootLayout';
 import { HomePage } from './pages/HomePage';
@@ -10,17 +9,11 @@ import { PostPage } from './pages/PostPage';
 import { PostEditPage } from './pages/PostEditPage';
 import { FindUsernamePage } from './pages/FindUsernamePage';
 import { FindPasswordPage } from './pages/FindPasswordPage';
-import { useAuthStore } from './store/authStore';
-import { api } from './lib/axios';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { useSessionSync } from './lib/session';
 
-export const App: React.FC = () => {
-  const { setUser } = useAuthStore();
-
-  useEffect(() => {
-    api.get('/me')
-      .then(res => setUser(res.data))
-      .catch(() => setUser(null));
-  }, [setUser]);
+export function App() {
+  useSessionSync();
 
   return (
     <BrowserRouter>
@@ -29,6 +22,7 @@ export const App: React.FC = () => {
           <Route index element={<HomePage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="signup" element={<SignupPage />} />
+          <Route path="verify-email" element={<VerifyEmailPage />} />
           <Route path="find-username" element={<FindUsernamePage />} />
           <Route path="find-password" element={<FindPasswordPage />} />
           <Route path="me" element={<MyPage />} />
@@ -40,4 +34,4 @@ export const App: React.FC = () => {
       </Routes>
     </BrowserRouter>
   );
-};
+}

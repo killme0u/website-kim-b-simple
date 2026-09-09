@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import page.sanotehu.board.backend.common.AuthenticationRequiredException;
 import page.sanotehu.board.backend.member.domain.Member;
 
 import java.util.Optional;
@@ -41,13 +42,13 @@ public class Board {
 
     public void checkReadable(Optional<Member> actor) {
         if (this.requiresAuthToRead && actor.isEmpty()) {
-            throw new RuntimeException("Auth required to read");
+            throw new AuthenticationRequiredException("'%s' 게시판은 로그인 후 이용할 수 있습니다.".formatted(this.name));
         }
     }
 
     public void checkWritable(Optional<Member> actor) {
         if (this.requiresAuthToWrite && actor.isEmpty()) {
-            throw new RuntimeException("Auth required to write");
+            throw new AuthenticationRequiredException("'%s' 게시판은 로그인 후 글을 쓸 수 있습니다.".formatted(this.name));
         }
     }
 }

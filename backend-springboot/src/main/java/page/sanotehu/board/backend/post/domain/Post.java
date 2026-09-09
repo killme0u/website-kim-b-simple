@@ -8,6 +8,7 @@ import page.sanotehu.board.backend.board.domain.Board;
 import page.sanotehu.board.backend.common.BaseTimeEntity;
 import page.sanotehu.board.backend.member.domain.Member;
 import page.sanotehu.board.backend.member.domain.MemberRole;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.ZonedDateTime;
@@ -76,12 +77,13 @@ public class Post extends BaseTimeEntity {
             Member m = actor.get();
             if (m.getRole() == MemberRole.ADMIN) return;
             if (this.member != null && this.member.getId().equals(m.getId())) return;
-            throw new RuntimeException("Access denied: Not the author");
-        } else {
-            if (this.member != null) throw new RuntimeException("Auth required to edit member post");
-            if (rawGuestPassword == null || !encoder.matches(rawGuestPassword, this.guestPasswordHash)) {
-                throw new RuntimeException("Guest password mismatch");
-            }
+            throw new AccessDeniedException("작성자만 수정·삭제할 수 있습니다.");
+        }
+        if (this.member != null) {
+            throw new AccessDeniedException("회원이 작성한 글은 로그인 후 수정·삭제할 수 있습니다.");
+        }
+        if (rawGuestPassword == null || !encoder.matches(rawGuestPassword, this.guestPasswordHash)) {
+            throw new AccessDeniedException("작성자 비밀번호가 일치하지 않습니다.");
         }
     }
 

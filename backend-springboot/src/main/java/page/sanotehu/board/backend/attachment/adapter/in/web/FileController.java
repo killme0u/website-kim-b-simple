@@ -2,17 +2,24 @@ package page.sanotehu.board.backend.attachment.adapter.in.web;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import page.sanotehu.board.backend.attachment.adapter.in.web.dto.FileResponse;
 import page.sanotehu.board.backend.attachment.application.FileStorageService;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @RestController
 @RequestMapping("/api/files")
@@ -27,26 +34,29 @@ public class FileController {
     }
 
     @GetMapping("/{storedName}")
-    public ResponseEntity<Resource> downloadFile(@PathVariable String storedName, @RequestParam(required = false) String download) throws IOException {
+    public ResponseEntity<Resource> downloadFile(
+            @PathVariable String storedName,
+            @RequestParam(required = false) String download) throws IOException {
         Resource resource = fileStorageService.loadFileAsResource(storedName);
-        
-        HttpHeaders headers = new HttpHeaders();
-        // Simple MIME guessing or relying on saved content type in DB
-        // But we only have storedName here. We can rely on extension or probe
-        String contentType = java.nio.file.Files.probeContentType(resource.getFile().toPath());
-        if (contentType == null) {
-            contentType = "application/octet-stream";
-        }
-        
-        if (download != null) {
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + URLEncoder.encode(resource.getFilename(), StandardCharsets.UTF_8) + "\"");
-        } else {
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline");
-        }
+        String filename = resource.getFilename() != null ? resource.getFilename() : storedName;
+
+        ContentDisposition disposition = (download != null
+                ? ContentDisposition.attachment()
+                : ContentDisposition.inline())
+                .filename(filename, StandardCharsets.UTF_8)
+                .build();
 
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType))
-                .headers(headers)
+                .contentType(probeContentType(resource))
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(resource);
+    }
+
+    private MediaType probeContentType(Resource resource) throws IOException {
+        Path path = resource.getFile().toPath();
+        String contentType = Files.probeContentType(path);
+        return contentType != null
+                ? MediaType.parseMediaType(contentType)
+                : MediaType.APPLICATION_OCTET_STREAM;
     }
 }

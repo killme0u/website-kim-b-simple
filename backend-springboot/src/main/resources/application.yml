@@ -18,6 +18,19 @@ spring:
     baseline-on-migrate: true
     clean-disabled: false
     clean-on-validation-error: true
+  # SMTP 설정. MAIL_HOST 를 주지 않으면 JavaMailSender 가 만들어지지 않고,
+  # MailConfig 가 로그 전용 발송기로 폴백한다(개발 환경 기본값).
+  # 운영에서는 SPRING_MAIL_HOST / SPRING_MAIL_USERNAME / SPRING_MAIL_PASSWORD 환경변수로 주입한다.
+  mail:
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
   servlet:
     multipart:
       max-file-size: 100MB
@@ -26,6 +39,10 @@ spring:
 app:
   storage:
     root: ./uploads
+  mail:
+    from: ${MAIL_FROM:no-reply@localhost}
+    # 메일 본문 링크의 기준 주소. 배포 시 외부에서 접근 가능한 주소로 바꾼다.
+    base-url: ${APP_BASE_URL:http://localhost:8080}
   captcha:
     mode: ${CAPTCHA_MODE:fake}
     endpoint: ${CAPTCHA_ENDPOINT:}

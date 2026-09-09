@@ -17,7 +17,6 @@ import page.sanotehu.board.backend.post.domain.PostRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +28,7 @@ public class CommentService {
     @Transactional(readOnly = true)
     public List<CommentResponse> getComments(Long postId, CustomUserDetails user) {
         Post post = postRepository.findById(postId).filter(p -> p.getDeletedAt() == null).orElseThrow();
-        Optional<Member> actor = Optional.ofNullable(user != null ? user.getMember() : null);
+        Optional<Member> actor = Optional.ofNullable(user).map(CustomUserDetails::getMember);
         post.getBoard().checkReadable(actor);
 
         boolean isAdmin = actor.map(m -> m.getRole() == MemberRole.ADMIN).orElse(false);
@@ -37,7 +36,7 @@ public class CommentService {
 
         return commentRepository.findByPostIdAndDeletedAtIsNullOrderByIdAsc(postId).stream()
                 .map(c -> CommentResponse.from(c, memberId, isAdmin))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Transactional

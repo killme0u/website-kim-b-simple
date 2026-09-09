@@ -1,31 +1,41 @@
-import React from 'react';
+import { useState, type FormEvent } from 'react';
 import { Outlet, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/authStore';
 import { api } from '../lib/axios';
+import { useRefreshSession } from '../lib/session';
 import { Button } from '@/shared/ui';
+import type { Board } from '../types';
 
-export const RootLayout: React.FC = () => {
+export function RootLayout() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
+  const refreshSession = useRefreshSession();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = React.useState(searchParams.get('q') || '');
+  const [search, setSearch] = useState(searchParams.get('q') ?? '');
 
-  const handleLogout = async () => {
-    try {
-      await api.post('/auth/logout');
+  const { data: boards = [] } = useQuery({
+    queryKey: ['boards'],
+    queryFn: async () => (await api.get<Board[]>('/boards')).data,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: () => api.post('/auth/logout'),
+    // 요청이 실패해도 클라이언트 상태는 비운다. 화면만 로그인 상태로 남는 편이 더 나쁘다.
+    onSettled: async () => {
       logout();
+      await refreshSession();
       navigate('/');
-    } catch (e) {
-      console.error('Logout failed', e);
-    }
-  };
+    },
+  });
 
-  const handleSearch = (event: React.FormEvent) => {
+  const handleSearch = (event: FormEvent) => {
     event.preventDefault();
-    if (search.trim()) {
-      setSearchParams({ q: search.trim(), page: '0' });
-      navigate(`/boards/free?q=${encodeURIComponent(search.trim())}&page=0`);
-    }
+    const keyword = search.trim();
+    if (!keyword) return;
+    setSearchParams({ q: keyword, page: '0' });
+    navigate(`/boards/free?q=${encodeURIComponent(keyword)}&page=0`);
   };
 
   return (
@@ -52,7 +62,15 @@ export const RootLayout: React.FC = () => {
                 <Link to="/me" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">
                   내 페이지
                 </Link>
-                <Button type="button" variant="ghost" size="sm" onClick={handleLogout}>로그아웃</Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={logoutMutation.isPending}
+                  onClick={() => logoutMutation.mutate()}
+                >
+                  로그아웃
+                </Button>
               </div>
             ) : (
               <>
@@ -66,9 +84,14 @@ export const RootLayout: React.FC = () => {
       <nav className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 py-2 text-sm font-medium text-slate-600">
           <Link to="/" className="rounded-lg px-3 py-2 hover:bg-slate-100">홈</Link>
-          <Link to="/boards/free" className="rounded-lg px-3 py-2 hover:bg-slate-100">게시판</Link>
-          <Link to="/boards/qna" className="rounded-lg px-3 py-2 hover:bg-slate-100">Q&A</Link>
-          <Link to="/boards/archive" className="rounded-lg px-3 py-2 hover:bg-slate-100">자료실</Link>
+          {boards.map(board => (
+            <Link key={board.slug} to={`/boards/${board.slug}`} className="flex items-center gap-1 rounded-lg px-3 py-2 hover:bg-slate-100">
+              {board.name}
+              {board.requiresAuthToRead && !isAuthenticated && (
+                <span aria-label="회원 전용" title="회원 전용 게시판" className="text-xs text-slate-400">🔒</span>
+              )}
+            </Link>
+          ))}
         </div>
       </nav>
 
@@ -80,4 +103,4 @@ export const RootLayout: React.FC = () => {
       </footer>
     </div>
   );
-};
+}

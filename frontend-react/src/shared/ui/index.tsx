@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, ReactNode, Ref, TextareaHTMLAttributes } from 'react';
 import { Button as CossButton } from '@/components/ui/button';
 import { Card as CossCard } from '@/components/ui/card';
 import { Input as CossInput } from '@/components/ui/input';
@@ -7,67 +7,101 @@ import { Field as CossField, FieldLabel } from '@/components/ui/field';
 import { Dialog as CossDialog, DialogPopup, DialogHeader, DialogTitle, DialogDescription, DialogPanel } from '@/components/ui/dialog';
 import { Alert as CossAlert } from '@/components/ui/alert';
 
+// React 19부터 ref는 일반 prop이므로 forwardRef 래핑이 필요하지 않다.
+
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type ButtonSize = 'sm' | 'md';
 
-export const Button = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & {
+const BUTTON_VARIANTS = {
+  primary: 'default',
+  secondary: 'secondary',
+  outline: 'outline',
+  ghost: 'ghost',
+  danger: 'destructive',
+} as const;
+
+const BUTTON_SIZES = {
+  sm: 'sm',
+  md: 'default',
+} as const;
+
+export function Button({
+  className = '',
+  variant = 'primary',
+  size = 'md',
+  ref,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant;
-  size?: 'sm' | 'md';
-}>(({ className = '', variant = 'primary', size = 'md', ...props }, ref) => {
-  const vMap: Record<string, any> = {
-    primary: 'default',
-    secondary: 'secondary',
-    outline: 'outline',
-    ghost: 'ghost',
-    danger: 'destructive',
-  };
-  const sMap: Record<string, any> = {
-    sm: 'sm',
-    md: 'default',
-  };
-  return <CossButton ref={ref} variant={vMap[variant] || 'default'} size={sMap[size] || 'default'} className={className} {...props} />;
-});
-Button.displayName = 'Button';
+  size?: ButtonSize;
+  ref?: Ref<HTMLButtonElement>;
+}) {
+  return (
+    <CossButton
+      ref={ref}
+      variant={BUTTON_VARIANTS[variant]}
+      size={BUTTON_SIZES[size]}
+      className={className}
+      {...props}
+    />
+  );
+}
 
-export const Card: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
-  <CossCard className={className} {...props} />
-);
+export function Card({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <CossCard className={className} {...props} />;
+}
 
-export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className = '', ...props }, ref) => (
-    <CossInput ref={ref} className={className} {...props} />
-  )
-);
-Input.displayName = 'Input';
+export function Input({
+  className = '',
+  ref,
+  ...props
+}: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
+  return <CossInput ref={ref} className={className} {...props} />;
+}
 
-export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  ({ className = '', ...props }, ref) => (
-    <CossTextarea ref={ref} className={className} {...props} />
-  )
-);
-Textarea.displayName = 'Textarea';
+export function Textarea({
+  className = '',
+  ref,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
+  return <CossTextarea ref={ref} className={className} {...props} />;
+}
 
-export const Field: React.FC<{
+export function Field({
+  label,
+  htmlFor,
+  hint,
+  children,
+}: {
   label: string;
   htmlFor?: string;
   hint?: string;
-  children: React.ReactNode;
-}> = ({ label, htmlFor, hint, children }) => (
-  <CossField className="block space-y-1.5 w-full">
-    <FieldLabel htmlFor={htmlFor} className="text-sm font-medium text-slate-700">{label}</FieldLabel>
-    {children}
-    {hint && <span className="block text-xs text-slate-500">{hint}</span>}
-  </CossField>
-);
+  children: ReactNode;
+}) {
+  return (
+    <CossField className="block space-y-1.5 w-full">
+      <FieldLabel htmlFor={htmlFor} className="text-sm font-medium text-slate-700">{label}</FieldLabel>
+      {children}
+      {hint && <span className="block text-xs text-slate-500">{hint}</span>}
+    </CossField>
+  );
+}
 
-export const Dialog: React.FC<{
+export function Dialog({
+  open,
+  title,
+  description,
+  onClose,
+  children,
+}: {
   open: boolean;
   title: string;
   description?: string;
   onClose: () => void;
-  children: React.ReactNode;
-}> = ({ open, title, description, onClose, children }) => {
+  children: ReactNode;
+}) {
   return (
-    <CossDialog open={open} onOpenChange={(v: boolean) => { if (!v) onClose(); }}>
+    <CossDialog open={open} onOpenChange={(nextOpen: boolean) => { if (!nextOpen) onClose(); }}>
       <DialogPopup className="w-[calc(100%-2rem)] max-w-md rounded-2xl border border-slate-200 shadow-2xl">
         <DialogHeader className="border-b border-slate-200 px-6 py-4">
           <DialogTitle className="text-lg font-semibold text-slate-900">{title}</DialogTitle>
@@ -77,17 +111,12 @@ export const Dialog: React.FC<{
       </DialogPopup>
     </CossDialog>
   );
-};
+}
 
-export const Alert: React.FC<{ tone?: 'error' | 'info'; children: React.ReactNode }> = ({
-  tone = 'info',
-  children,
-}) => {
-  // map tone to valid VariantProps for Alert
-  const v = tone === 'error' ? 'error' : 'info';
+export function Alert({ tone = 'info', children }: { tone?: 'error' | 'info'; children: ReactNode }) {
   return (
-    <CossAlert variant={v} className="px-3 py-2 text-sm rounded-lg">
+    <CossAlert variant={tone === 'error' ? 'error' : 'info'} className="px-3 py-2 text-sm rounded-lg">
       {children}
     </CossAlert>
   );
-};
+}
