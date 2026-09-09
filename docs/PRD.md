@@ -32,6 +32,7 @@
 | D2 | 조회수 중복 방지 | **하이브리드** — 로그인 사용자는 서버 사이드 기록, 익명 사용자는 쿠키 | 2.6, 4.1, 6.2 |
 | D3 | 게시판 모델링 | `Post` 단일 엔티티 + `Board`가 정책 보유 | 2.8, 3.2 |
 | D4 | 첨부파일 보안 | 업로드 보안 체크리스트 8항목을 **구현 필수 항목**으로 승격 | 6.3 |
+| D5 | 닉네임 정규화 | 중복확인 조회와 가입 저장이 **같은 정규화 규칙**(`Member.normalizeNickname`)을 공유. 앞뒤 공백 제거, 빈 값은 닉네임 미사용(`null`) | 2.4, 5.5 |
 
 ## 함께 수정한 정합성 문제
 
@@ -158,13 +159,25 @@ DB에 임시 비밀번호 저장 → 커밋 → 메일 발송 실패
 - `PENDING`은 24시간 후 만료 (삭제 또는 아이디 해제)
 - 인증 토큰은 **해시로 저장**, 1회용, 만료 시간 보유
 
-## 2.4 아이디 중복확인은 방어선이 아님
+## 2.4 아이디·닉네임 중복확인은 방어선이 아님
 
 "중복확인 버튼을 눌렀을 때는 사용 가능"과 "실제 가입 시점" 사이에 다른 사용자가 선점할 수 있습니다(TOCTOU).
 
-- 진짜 방어선은 **`UNIQUE` 제약**
+- 진짜 방어선은 **`UNIQUE` 제약** (`member.username`, `member.email`, 부분 유니크 인덱스 `ux_member_nickname`)
 - `DataIntegrityViolationException` → `409 Conflict` 변환 필수 (누락 시 500 에러가 사용자에게 노출됨)
 - 중복확인 API는 UX 편의 기능일 뿐임을 팀 내에 명확히 공유
+
+### 중복확인과 저장의 정규화는 같아야 한다 — **결정 (D5)**
+
+중복확인이 조회하는 값과 가입이 저장하는 값의 정규화 규칙이 다르면, TOCTOU와 무관하게 **혼자 시도해도 재현되는 오류**가 생깁니다.
+닉네임은 저장 시 `trim`되므로 `" 단팥빵"`은 중복확인에서 "사용 가능"으로 보이고 가입에서 409로 튕깁니다.
+
+- 정규화 규칙은 도메인 한 곳(`Member.normalizeNickname`)에만 두고, 저장 경로(`Member.pending`)와 중복확인 조회가 함께 사용한다.
+- 닉네임 규칙: 앞뒤 공백 제거, 빈 값은 `null`(닉네임 미사용)로 취급.
+  `ux_member_nickname`은 `WHERE nickname IS NOT NULL` 부분 인덱스이므로 닉네임 없는 회원끼리는 충돌하지 않는다.
+- 정규화 결과가 비면 충돌 대상이 없으므로 `available: true`로 응답한다. 빈 값으로 조회 요청을 보내지 않는 것은 화면의 책임이다.
+- 클라이언트도 확인 요청과 가입 요청에 같은 정규화 값을 보낸다.
+- 회귀 테스트: `MemberControllerTest`, `MemberTest`.
 
 ## 2.5 확장자 기반 미디어 판단은 XSS 경로
 
@@ -249,7 +262,7 @@ requires_auth  →  requires_auth_to_read
 | 2.1 | 비회원 글 수정·삭제 권한 | 명세 누락 | **결정 (D1)** | 작성자 비밀번호 + 관리자 우회 |
 | 2.2 | 임시 비밀번호 발송 실패 | 장애 시나리오 | 대기 | 만료 + 강제변경 + 재발송 |
 | 2.3 | 미인증 계정 점유 | 명세 누락 | 대기 | 계정 상태 + 만료 정책 |
-| 2.4 | 아이디 중복확인 | 오해 소지 | 확정 | UNIQUE + 409 처리 |
+| 2.4 | 아이디·닉네임 중복확인 | 오해 소지 | 확정 + **결정 (D5)** | UNIQUE + 409 처리, 조회·저장 정규화 일치 |
 | 2.5 | 확장자 기반 판단 | **보안** | **결정 (D4)** | 실제 MIME 검증 |
 | 2.6 | 조회수 중복 방지 | 기술 제약 | **결정 (D2)** | 하이브리드 추적 |
 | 2.7 | 좋아요 중복 | 명세 누락 | 확정 | UNIQUE 테이블 |
@@ -826,6 +839,7 @@ public class GlobalExceptionHandler {
 |---|---|---|---|
 | `POST` | `/api/members/signup` | — | 회원가입 (이메일 인증 메일 발송) |
 | `GET` | `/api/members/username-availability?username=` | — | 아이디 중복확인 (UX용) |
+| `GET` | `/api/members/nickname-availability?nickname=` | — | 닉네임 중복확인 (UX용, D5 정규화 적용) |
 | `GET` | `/api/members/verify-email?token=` | — | 이메일 인증 완료 |
 | `POST` | `/api/members/verify-email/resend` | — | 인증 메일 재발송 |
 | `POST` | `/api/members/password-reset` | — | 임시 비밀번호 발송 |
@@ -924,6 +938,52 @@ public void issueTemporaryPassword(String email) {
 ```
 
 이메일이 존재하지 않아도 `200 OK`와 "이메일을 보냈습니다"를 반환합니다. `404`를 내면 공격자가 가입된 이메일 목록을 수집할 수 있습니다.
+
+### SMTP 설정 주입 — 비밀값은 저장소 밖에
+
+SMTP 계정 정보는 소스와 `application.yml`에 평문으로 두지 않습니다. 저장소 루트의 `.env`(=`.gitignore` 대상)에서 주입하고, 커밋되는 것은 양식인 `.env.example` 뿐입니다. CAPTCHA secret에 적용한 것과 같은 원칙입니다.
+
+```yaml
+# application.yml — optional: 이라 .env 가 없어도 앱은 그대로 뜬다
+spring:
+  config:
+    import:
+      - optional:file:./.env[.properties]     # 저장소 루트에서 실행(java -jar)
+      - optional:file:../.env[.properties]    # 모듈 디렉터리에서 실행(bootRun)
+  mail:
+    host: ${MAIL_SMTP_HOST:}
+    port: ${MAIL_SMTP_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        debug: ${MAIL_DEBUG:false}
+        smtp:
+          auth: true
+          ssl:
+            enable: ${MAIL_SMTP_SSL:true}     # 465 = 암묵적 SSL(SMTPS)
+            trust: ${MAIL_SMTP_HOST:}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}   # 587 을 쓸 때만 true
+
+app:
+  mail:
+    from: ${MAIL_FROM_ADMIN:...}   # spring.mail.from 은 Boot 표준 속성이 아니다
+```
+
+주의할 점이 세 가지 있습니다.
+
+| 항목 | 이유 |
+|---|---|
+| 모든 placeholder에 기본값(`:`)을 준다 | 기본값이 없으면 `.env` 없는 환경에서 placeholder 해석 실패로 **기동 자체가 깨진다** |
+| 발신자는 `app.mail.from`으로 받는다 | `spring.mail.from`은 Spring Boot 표준 속성이 아니라 아무 효과가 없다 |
+| 폴백 판단은 빈 유무가 아니라 **값**으로 한다 | `spring.mail.host`에 빈 문자열 기본값을 주는 순간 속성은 항상 존재하게 되고, `@ConditionalOnProperty`는 빈 문자열도 "있음"으로 보므로 `JavaMailSender` 빈이 늘 만들어진다 |
+
+세 번째 항목 때문에 `MailConfig`는 호스트와 계정 **문자열**을 직접 확인해 `LoggingMailSender`로 폴백합니다. 계정까지 보는 이유는 `.env.example`을 복사만 하고 자격 증명을 비워 둔 상태에서, 기동은 성공한 뒤 **가입 시점에야** SMTP 인증 실패로 터지는 상황을 막기 위해서입니다.
+
+`MAIL_DEBUG`는 SMTP 대화 전체를 stdout에 남기며 여기엔 인증 정보가 포함됩니다. 기본값을 `false`로 두고 디버깅할 때만 켭니다.
+
+같은 이름의 OS 환경 변수가 `.env`보다 우선하므로, 운영·컨테이너 배포는 환경 변수 경로를 그대로 씁니다. 이미지 안에는 `.env`를 넣지 않습니다.
 
 ## 6.2 조회수 중복 방지 — 하이브리드 추적 (D2)
 
@@ -1616,6 +1676,8 @@ const save = useDraftStore((s) => s.save)
 website-kim-b-simple/
 ├── settings.gradle
 ├── build.gradle
+├── .env.example               ← 커밋되는 양식
+├── .env                       ← 실제 비밀값. .gitignore 대상이라 커밋되지 않는다
 ├── buildSrc/
 │   └── src/main/groovy/board.java-conventions.gradle
 ├── backend-springboot/
@@ -1779,6 +1841,28 @@ services:
       - postgres-data:/var/lib/postgresql/data
     restart: unless-stopped
 ```
+
+`docker compose`는 저장소 루트의 `.env`를 자동으로 읽으므로, SMTP 값은 `environment:`에서 `${MAIL_SMTP_HOST:-}`처럼 참조해 컨테이너로 넘깁니다. 이미지 안에는 `.env`를 넣지 않습니다(`Dockerfile`이 복사하지 않습니다).
+
+## 8.8 로컬 비밀값 — `.env`
+
+SMTP 계정과 CAPTCHA secret은 저장소에 커밋하지 않습니다. 커밋되는 것은 양식인 `.env.example` 뿐이고, 실제 값은 각자 `.env`에 채웁니다.
+
+```powershell
+Copy-Item .env.example .env   # 저장소 루트에서 1회
+```
+
+| 항목 | 내용 |
+|---|---|
+| 문법 | dotenv가 아니라 **`.properties`** — 따옴표로 감싸지 말 것, `\`는 이스케이프, 값에 한글 금지(ISO-8859-1) |
+| 읽는 경로 | `application.yml`의 `spring.config.import` (`optional:`이라 없어도 기동됨) |
+| `bootRun` | 작업 디렉터리가 모듈 디렉터리라 `backend-springboot/build.gradle`이 절대경로를 함께 넘긴다 |
+| 테스트 | 로컬 값에 흔들리면 안 되므로 **일부러 읽지 않는다** |
+| 우선순위 | 같은 이름의 OS 환경 변수가 `.env`보다 우선 (운영·컨테이너 경로) |
+
+`.gitignore`에 `.env`가 실제로 등재돼 있는지는 `git check-ignore -v .env`로 확인합니다. 이 한 줄이 빠지면 앱 비밀번호가 그대로 커밋됩니다.
+
+값 목록과 SMTP 폴백 규칙은 6.1의 「SMTP 설정 주입」과 `README.md`를 참고합니다.
 
 ---
 

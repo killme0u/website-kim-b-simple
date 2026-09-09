@@ -1,6 +1,13 @@
 HELP.md
 .gradle
 build/
+
+### 로컬 비밀값 ###
+# SMTP 계정 등 실제 값은 .env 에만 두고 커밋하지 않는다. 양식인 .env.example 만 커밋한다.
+.env
+.env.local
+!.env.example
+
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -36,3 +43,7 @@ out/
 ### VS Code ###
 .vscode/
 .flash-mem/
+
+### AI 도구 로컬 설정 ###
+# .ai/mcp/mcp.json 은 MCP 서버 실행 명령에 머신별 절대경로가 들어가므로 커밋하지 않는다.
+.ai/

@@ -62,18 +62,40 @@ npm run dev
 
 ## 메일 발송 설정
 
-인증 메일은 `spring.mail.host`가 설정된 경우에만 실제로 발송됩니다.
-설정이 없으면 `LoggingMailSender`가 메일 본문(인증 링크 포함)을 애플리케이션 로그에만 남기므로,
-개발 환경에서는 별도 SMTP 없이도 가입 흐름을 끝까지 확인할 수 있습니다.
+SMTP 계정 정보와 CAPTCHA secret 같은 비밀값은 **저장소 루트의 `.env`** 에서 주입합니다.
+`.env`는 `.gitignore` 대상이라 커밋되지 않으며, 커밋되는 것은 양식인 `.env.example` 뿐입니다.
 
-```bash
-export SPRING_MAIL_HOST=smtp.example.com
-export SPRING_MAIL_PORT=587
-export SPRING_MAIL_USERNAME=board
-export SPRING_MAIL_PASSWORD=...
-export MAIL_FROM="BoardSystem <no-reply@example.com>"
-export APP_BASE_URL=https://board.example.com   # 메일 본문 링크의 기준 주소
+```powershell
+Copy-Item .env.example .env   # 저장소 루트에서 1회
+# 그리고 .env 에 실제 값을 채우면 끝
 ```
+
+`.env`는 dotenv가 아니라 **`.properties` 문법**으로 읽힙니다.
+값을 따옴표로 감싸지 말고, 역슬래시 대신 `/`를 쓰고, 값에 한글을 넣지 마세요(ISO-8859-1로 읽힘).
+
+| 키 | 설명 |
+|---|---|
+| `MAIL_SMTP_HOST` | SMTP 호스트. 비우면 실제 발송 대신 로그로만 남습니다 |
+| `MAIL_SMTP_PORT` | 기본 `465` |
+| `MAIL_SMTP_SSL` / `MAIL_SMTP_STARTTLS` | `465`면 `true`/`false`, `587`이면 `false`/`true` |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | 로그인 계정. 네이버는 **앱 비밀번호**를 발급받아 씁니다 |
+| `MAIL_FROM_ADMIN` | 보내는 사람 주소. 네이버는 보통 `MAIL_USERNAME`과 같은 주소만 허용합니다 |
+| `MAIL_DEBUG` | SMTP 대화를 stdout에 출력. 인증 정보까지 남으므로 디버깅할 때만 `true` |
+| `APP_BASE_URL` | 메일 본문 링크의 기준 주소 |
+| `CAPTCHA_*` | CAPTCHA provider 설정 |
+
+`MAIL_SMTP_HOST`나 `MAIL_USERNAME` 중 하나라도 비어 있으면 `LoggingMailSender`가
+메일 본문(인증 링크 포함)을 애플리케이션 로그에만 남깁니다.
+덕분에 개발 환경에서는 별도 SMTP 없이도 가입 흐름을 끝까지 확인할 수 있고,
+`.env.example`을 복사만 해 둔 상태에서 가입 시점에 SMTP 인증 오류로 터지지도 않습니다.
+
+읽는 경로는 `application.yml`의 `spring.config.import`이며 `optional:`이라 `.env`가 없어도 앱은 그대로 뜹니다.
+`bootRun`은 작업 디렉터리가 모듈 디렉터리라서 `backend-springboot/build.gradle`이 절대경로를 함께 넘깁니다.
+테스트는 로컬 값에 흔들리지 않도록 일부러 `.env`를 읽지 않습니다.
+
+같은 이름의 **OS 환경 변수가 있으면 그쪽이 이깁니다**(운영·컨테이너 배포 경로).
+`docker compose`는 저장소 루트의 `.env`를 자동으로 읽어 컨테이너 환경 변수로 넘기며,
+이미지 안에는 `.env`를 넣지 않습니다.
 
 ## 게시판 접근 정책
 

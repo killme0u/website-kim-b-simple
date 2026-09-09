@@ -30,9 +30,10 @@ public class SignupService {
         if (!captchaVerifier.verify(cmd.getCaptchaToken(), remoteAddress)) {
             throw new IllegalArgumentException("CAPTCHA 검증에 실패했습니다.");
         }
+        // 닉네임 정규화(trim, 빈 값 → null)는 Member.pending이 수행한다.
         Member member = Member.pending(
             cmd.getUsername(), encoder.encode(cmd.getPassword()),
-            cmd.getName(), nullable(cmd.getNickname()), cmd.getEmail(), cmd.getPhone()
+            cmd.getName(), cmd.getNickname(), cmd.getEmail(), cmd.getPhone()
         );
         memberRepository.save(member);
 
@@ -47,9 +48,5 @@ public class SignupService {
 
     public Long signup(SignupCommand cmd) {
         return signup(cmd, null);
-    }
-
-    private String nullable(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 }

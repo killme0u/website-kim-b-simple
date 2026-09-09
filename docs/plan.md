@@ -9,6 +9,8 @@
 ### 프론트엔드
 
 - `SignupPage`: 약관 동의, 기본 정보, 이메일 인증, 아이디·닉네임 중복 확인, CAPTCHA, 가입 완료 단계
+  - 아이디와 닉네임은 판정 결과를 입력란 아래에 같은 문구로 표시하고, 값이 비었거나 요청 중이면 `중복 확인` 버튼을 비활성화한다.
+    한쪽에만 표시가 있으면 사용자는 제출이 막힌 이유를 알 수 없다(`docs/UI.md` 「아이디·닉네임 중복 확인 규칙」).
 - `MyPage`: 회원 정보, 내 게시글, 내 댓글, 비밀번호 변경 진입
 - `LoginPage`: 로그인 유지, 아이디 찾기·비밀번호 찾기 진입 및 백엔드 계약 연결
 - `RootLayout`: 전역 검색, 홈·게시판·Q&A·자료실 네비게이션, 로그인 상태별 메뉴, 푸터
@@ -22,6 +24,8 @@
 - 가입 트랜잭션 전에 CAPTCHA 토큰의 유효성·만료·요청 맥락을 서버에서 검증한다.
 - CAPTCHA 누락·실패·만료·provider 장애는 일반화된 오류로 반환하고 회원을 생성하지 않는다.
 - 이메일 인증 완료·재발송 API를 추가하고 `PENDING` 회원을 검증 후 `ACTIVE`로 전환한다.
+- SMTP 호스트·포트·계정·발신자 주소는 저장소 루트 `.env`에서 주입하고, 커밋되는 것은 `.env.example` 양식뿐이다.
+- SMTP 호스트나 계정이 비어 있으면 실제 발송 대신 로그 전용 발송기로 폴백해 개발 환경에서 가입 흐름이 막히지 않도록 한다.
 - 비밀번호 찾기·재설정·변경 API는 임시 비밀번호 만료와 `must_change_password` 정책을 유지한다.
 - 필요한 DB 변경은 별도 Flyway migration으로 작성한다.
 - Google OAuth는 provider·callback·계정 연결 정책이 확정된 뒤에만 구현한다.
@@ -32,6 +36,7 @@
 |---|---|
 | 회원가입 | `POST /api/members/signup`, `captchaToken`, 약관 동의 포함 |
 | 아이디 중복 | `GET /api/members/username-availability?username=` |
+| 닉네임 중복 | `GET /api/members/nickname-availability?nickname=` (저장과 같은 정규화로 조회, PRD D5) |
 | 이메일 인증 완료 | `POST /api/members/verify-email` |
 | 인증 메일 재발송 | `POST /api/members/verify-email/resend` |
 | 현재 사용자 | `GET /api/me` |
@@ -43,9 +48,11 @@
 ## 보안 및 오류 처리
 
 - 클라이언트의 CAPTCHA 체크 상태를 신뢰하지 않고 서버 검증 결과만 사용한다.
-- CAPTCHA secret은 소스와 `application.yml`에 평문으로 저장하지 않는다.
+- CAPTCHA secret과 SMTP 계정 정보는 소스와 `application.yml`에 평문으로 저장하지 않고 `.env`에서 주입한다. `.env`는 `.gitignore` 대상이어야 한다.
+- SMTP 디버그 로그(`MAIL_DEBUG`)는 인증 정보를 포함하므로 기본값을 `false`로 두고 필요할 때만 켠다.
 - 원본 CAPTCHA 토큰과 비밀번호는 로그·localStorage·Zustand persist에 남기지 않는다.
 - 인증 토큰은 1회용·만료 처리하고, 중복 아이디·닉네임은 DB UNIQUE 제약을 최종 방어선으로 사용한다.
+- 중복 확인 조회와 가입 저장은 같은 정규화 규칙을 공유한다(PRD D5). 규칙이 갈라지면 UNIQUE 제약이 UX 오류로 드러난다.
 - 이메일 인증·비밀번호 재설정·CAPTCHA 실패 메시지는 계정 존재 여부를 과도하게 노출하지 않는다.
 
 ## 검증 기준
@@ -54,13 +61,18 @@
 - CAPTCHA 성공 후에도 이메일 인증 전 회원 상태는 `PENDING`이다.
 - 이메일 인증 토큰은 1회만 사용할 수 있고 만료 토큰은 거부된다.
 - 중복 아이디·닉네임 가입이 거부된다.
+- 아이디·닉네임 중복 확인 결과가 각 입력란 아래에 표시된다.
+- 앞뒤 공백만 다른 닉네임이 중복 확인에서 "사용 가능"으로 보이지 않는다(`MemberControllerTest`, `MemberTest`).
 - 회원가입·로그인·로그아웃·마이페이지·게시판·댓글 흐름이 유지된다.
+- `.env`가 없어도 앱이 기동하고, `.env`의 SMTP 값이 채워지면 실제 발송으로 전환된다.
+- `git check-ignore -v .env`가 `.env`를 무시 대상으로 보고한다.
 - `npm run lint`, `npm run build`, 백엔드 테스트 또는 Gradle 빌드가 통과한다.
 
 ## 선결 결정
 
 1. 운영 CAPTCHA provider와 키 주입 방식
-2. 닉네임을 `member.nickname`으로 추가할지 기존 `name`을 표시명으로 사용할지
+2. ~~닉네임을 `member.nickname`으로 추가할지 기존 `name`을 표시명으로 사용할지~~
+   → **결정 (2026-09-10)**: `member.nickname` 컬럼 추가(`V3__add_member_nickname.sql`), 선택 항목이며 부분 유니크 인덱스로 중복을 막는다.
 3. Google 로그인 제공 여부
 4. 로그인 유지의 세션·토큰 정책
 5. 아이디 찾기 본인 확인 방식

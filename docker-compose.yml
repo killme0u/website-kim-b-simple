@@ -8,6 +8,18 @@ services:
       - SPRING_DATASOURCE_USERNAME=board_user
       - SPRING_DATASOURCE_PASSWORD=board_password
       - APP_STORAGE_ROOT=/app/uploads
+      # 아래 값은 저장소 루트 .env 에서 온다. docker compose 가 .env 를 자동으로 읽는다.
+      # .env 가 없거나 값이 비면 빈 문자열이 되고, 앱은 로그 전용 발송기로 폴백한다.
+      # 이미지 안에는 .env 를 넣지 않는다(Dockerfile 이 복사하지 않는다).
+      - MAIL_SMTP_HOST=${MAIL_SMTP_HOST:-}
+      - MAIL_SMTP_PORT=${MAIL_SMTP_PORT:-465}
+      - MAIL_SMTP_SSL=${MAIL_SMTP_SSL:-true}
+      - MAIL_SMTP_STARTTLS=${MAIL_SMTP_STARTTLS:-false}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_FROM_ADMIN=${MAIL_FROM_ADMIN:-no-reply@localhost}
+      - MAIL_DEBUG=${MAIL_DEBUG:-false}
+      - APP_BASE_URL=${APP_BASE_URL:-http://localhost:8080}
     depends_on:
       - postgres
     volumes:

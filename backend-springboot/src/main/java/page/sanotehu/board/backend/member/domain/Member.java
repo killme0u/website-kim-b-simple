@@ -50,13 +50,26 @@ public class Member extends BaseTimeEntity {
     @Column(name = "temp_password_expires_at", columnDefinition = "TIMESTAMP WITH TIME ZONE")
     private ZonedDateTime tempPasswordExpiresAt;
 
+    /**
+     * 닉네임 정규화 규칙. 앞뒤 공백을 지우고, 빈 값은 "닉네임 없음"(null)으로 본다.
+     * 저장 경로와 중복 확인 조회가 같은 값을 보게 하려면 규칙이 도메인 한 곳에만 있어야 한다.
+     * (규칙이 갈라지면 " 홍길동"이 중복 확인은 통과하고 저장 시 UNIQUE 위반으로 409가 난다.)
+     */
+    public static String normalizeNickname(String nickname) {
+        if (nickname == null) {
+            return null;
+        }
+        String trimmed = nickname.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     public static Member pending(String username, String passwordHash, String name,
                                  String nickname, String email, String phone) {
         Member member = new Member();
         member.username = username;
         member.passwordHash = passwordHash;
         member.name = name;
-        member.nickname = nickname;
+        member.nickname = normalizeNickname(nickname);
         member.email = email;
         member.phone = phone;
         member.status = MemberStatus.PENDING;

@@ -63,6 +63,15 @@ dependencyManagement {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// SMTP 계정 같은 비밀값은 저장소 루트의 .env 에서 온다(.gitignore 대상).
+// bootRun 의 작업 디렉터리는 이 모듈 디렉터리라 상대경로가 헷갈리므로 절대경로를 직접 넘긴다.
+// optional: 이므로 .env 가 없어도 그대로 뜬다. test 에는 넘기지 않는다 —
+// 테스트가 개발자 로컬의 .env 값에 따라 달라지면 안 되기 때문이다.
+tasks.named('bootRun') {
+    def dotenv = rootProject.file('.env').absolutePath.replace('\\', '/')
+    systemProperty 'spring.config.import', "optional:file:${dotenv}[.properties]"
+}
 configurations {
     frontendAssets { canBeConsumed = false; canBeResolved = true }
 }

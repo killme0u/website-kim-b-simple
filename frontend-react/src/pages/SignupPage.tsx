@@ -24,6 +24,9 @@ export function SignupPage() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // 서버는 닉네임을 trim해서 저장하므로, 중복 확인도 가입도 같은 값으로 보내야 판정이 어긋나지 않는다.
+  const trimmedNickname = nickname.trim();
+
   const checkUsername = useMutation({
     mutationFn: async () => (
       await api.get<{ available: boolean }>('/members/username-availability', { params: { username } })
@@ -34,7 +37,7 @@ export function SignupPage() {
 
   const checkNickname = useMutation({
     mutationFn: async () => (
-      await api.get<{ available: boolean }>('/members/nickname-availability', { params: { nickname } })
+      await api.get<{ available: boolean }>('/members/nickname-availability', { params: { nickname: trimmedNickname } })
     ).data.available,
     onSuccess: setNicknameAvailable,
     onError: e => setError(errorMessage(e, '닉네임 중복 확인에 실패했습니다.')),
@@ -42,7 +45,7 @@ export function SignupPage() {
 
   const signup = useMutation({
     mutationFn: () => api.post('/members/signup', {
-      username, password, name, nickname, email, phone, captchaToken, termsAccepted,
+      username, password, name, nickname: trimmedNickname, email, phone, captchaToken, termsAccepted,
     }),
     onSuccess: () => {
       setError('');
@@ -67,7 +70,7 @@ export function SignupPage() {
     setError('');
     if (!termsAccepted) return setError('필수 약관에 동의해 주세요.');
     if (usernameAvailable !== true) return setError('아이디 중복 확인을 완료해 주세요.');
-    if (nickname && nicknameAvailable !== true) return setError('닉네임 중복 확인을 완료해 주세요.');
+    if (trimmedNickname && nicknameAvailable !== true) return setError('닉네임 중복 확인을 완료해 주세요.');
     if (password !== passwordConfirm) return setError('비밀번호가 일치하지 않습니다.');
     signup.mutate();
   };
@@ -106,7 +109,7 @@ export function SignupPage() {
             <Field label="아이디" htmlFor="username">
               <div className="flex gap-2">
                 <Input id="username" value={username} onChange={event => { setUsername(event.target.value); setUsernameAvailable(null); }} required />
-                <Button type="button" variant="outline" size="sm" onClick={() => checkUsername.mutate()}>중복 확인</Button>
+                <Button type="button" variant="outline" size="sm" disabled={!username.trim() || checkUsername.isPending} onClick={() => checkUsername.mutate()}>중복 확인</Button>
               </div>
               {usernameAvailable !== null && (
                 <p className={`text-xs ${usernameAvailable ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -116,11 +119,16 @@ export function SignupPage() {
             </Field>
             <Field label="이름" htmlFor="name"><Input id="name" value={name} onChange={event => setName(event.target.value)} required /></Field>
           </div>
-          <Field label="닉네임" htmlFor="nickname">
+          <Field label="닉네임" htmlFor="nickname" hint="비워 두면 닉네임 없이 가입합니다.">
             <div className="flex gap-2">
               <Input id="nickname" value={nickname} onChange={event => { setNickname(event.target.value); setNicknameAvailable(null); }} />
-              <Button type="button" variant="outline" size="sm" onClick={() => checkNickname.mutate()}>중복 확인</Button>
+              <Button type="button" variant="outline" size="sm" disabled={!trimmedNickname || checkNickname.isPending} onClick={() => checkNickname.mutate()}>중복 확인</Button>
             </div>
+            {nicknameAvailable !== null && (
+              <p className={`text-xs ${nicknameAvailable ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {nicknameAvailable ? '사용할 수 있습니다.' : '이미 사용 중입니다.'}
+              </p>
+            )}
           </Field>
           <Field label="이메일" htmlFor="email" hint="가입 요청 후 인증 메일이 발송됩니다.">
             <Input id="email" type="email" value={email} onChange={event => setEmail(event.target.value)} required />

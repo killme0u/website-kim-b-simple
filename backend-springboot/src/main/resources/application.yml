@@ -1,6 +1,16 @@
 spring:
   application:
     name: board-backend
+  # SMTP 계정·CAPTCHA secret 같은 비밀값은 저장소 루트의 .env 에서 주입한다(.gitignore 대상).
+  #   PS> Copy-Item .env.example .env   ← 저장소 루트에서 1회
+  # optional: 이므로 .env 가 없어도 앱은 그대로 뜬다. dotenv 가 아니라 .properties 문법으로 읽힌다.
+  # 두 경로를 모두 두는 이유: 저장소 루트에서 실행(java -jar)과 모듈 디렉터리에서 실행(bootRun)을
+  # 모두 지원하기 위해서다. bootRun 은 build.gradle 이 절대경로도 함께 넘긴다.
+  # 같은 이름의 OS 환경 변수가 있으면 그쪽이 이긴다(운영/컨테이너 배포 경로).
+  config:
+    import:
+      - optional:file:./.env[.properties]
+      - optional:file:../.env[.properties]
   datasource:
     url: jdbc:postgresql://192.168.29.124:5432/board_db
     username: board_user
@@ -18,16 +28,26 @@ spring:
     baseline-on-migrate: true
     clean-disabled: false
     clean-on-validation-error: true
-  # SMTP 설정. MAIL_HOST 를 주지 않으면 JavaMailSender 가 만들어지지 않고,
-  # MailConfig 가 로그 전용 발송기로 폴백한다(개발 환경 기본값).
-  # 운영에서는 SPRING_MAIL_HOST / SPRING_MAIL_USERNAME / SPRING_MAIL_PASSWORD 환경변수로 주입한다.
+  # SMTP 설정. 값은 저장소 루트 .env 에서 온다(위 spring.config.import 참고).
+  # MAIL_SMTP_HOST 가 비어 있으면 MailConfig 가 로그 전용 발송기로 폴백한다(개발 환경 기본값).
+  # 465 = 암묵적 SSL(SMTPS, 네이버 기본). 587 을 쓰려면 .env 에서
+  # MAIL_SMTP_SSL=false, MAIL_SMTP_STARTTLS=true 로 바꾼다.
   mail:
+    host: ${MAIL_SMTP_HOST:}
+    port: ${MAIL_SMTP_PORT:465}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
+        # SMTP 대화 전체(인증 정보 포함)를 stdout 에 찍는다. 디버깅할 때만 켠다.
+        debug: ${MAIL_DEBUG:false}
         smtp:
           auth: true
+          ssl:
+            enable: ${MAIL_SMTP_SSL:true}
+            trust: ${MAIL_SMTP_HOST:}
           starttls:
-            enable: true
+            enable: ${MAIL_SMTP_STARTTLS:false}
           connectiontimeout: 5000
           timeout: 5000
           writetimeout: 5000
@@ -40,7 +60,9 @@ app:
   storage:
     root: ./uploads
   mail:
-    from: ${MAIL_FROM:no-reply@localhost}
+    # 보내는 사람 주소. spring.mail.from 은 Spring Boot 표준 속성이 아니라서 여기서 받는다.
+    # 네이버 SMTP 는 보통 MAIL_USERNAME 과 같은 주소만 발신자로 허용한다.
+    from: ${MAIL_FROM_ADMIN:${MAIL_FROM:no-reply@localhost}}
     # 메일 본문 링크의 기준 주소. 배포 시 외부에서 접근 가능한 주소로 바꾼다.
     base-url: ${APP_BASE_URL:http://localhost:8080}
   captcha:
