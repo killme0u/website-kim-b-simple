@@ -2,6 +2,10 @@ FROM eclipse-temurin:25.0.3_9-jdk AS builder
 
 WORKDIR /app
 
+# Copy environment files for build-time configuration
+COPY .env.* ./
+COPY frontend-react/.env* ./frontend-react/
+
 # Copy gradle wrapper and config first to cache dependencies
 COPY gradlew .
 COPY gradle gradle
