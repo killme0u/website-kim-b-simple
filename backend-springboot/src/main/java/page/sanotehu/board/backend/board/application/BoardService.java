@@ -1,6 +1,7 @@
 package page.sanotehu.board.backend.board.application;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +23,10 @@ public class BoardService {
     /**
      * 게시판 목록은 누구나 볼 수 있다. 회원제 게시판은 requiresAuthToRead 플래그로 구분되며
      * 실제 입장 여부는 {@link #getBoardBySlug} 및 게시글 조회 시점에 판정한다.
+     * 게시판 설정이 거의 변경되지 않으므로 캐싱한다.
      */
     @Transactional(readOnly = true)
+    @Cacheable("boards")
     public List<BoardResponse> getAllBoards() {
         return boardRepository.findAll(Sort.by(Sort.Direction.ASC, "displayOrder")).stream()
                 .map(BoardResponse::from)
@@ -31,6 +34,7 @@ public class BoardService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "board", key = "#slug")
     public BoardResponse getBoardBySlug(String slug, CustomUserDetails user) {
         Board board = boardRepository.findBySlug(slug)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시판입니다: " + slug));
