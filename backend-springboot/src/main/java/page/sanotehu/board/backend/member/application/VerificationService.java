@@ -15,6 +15,7 @@ import page.sanotehu.board.backend.member.domain.VerificationToken;
 import page.sanotehu.board.backend.member.domain.VerificationTokenRepository;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Service
@@ -23,6 +24,9 @@ public class VerificationService {
 
     private static final String EMAIL_VERIFICATION = "EMAIL_VERIFICATION";
     private static final String PASSWORD_RESET = "PASSWORD_RESET";
+    private static final String TEMP_PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int TEMP_PASSWORD_LENGTH = 12;
+    private static final java.util.Random RANDOM = new java.util.Random();
 
     private final MemberRepository memberRepository;
     private final VerificationTokenRepository tokenRepository;
@@ -84,5 +88,34 @@ public class VerificationService {
         tokenRepository.save(VerificationToken.passwordReset(
                 member, TokenHasher.sha256(rawToken), Duration.ofHours(1)));
         events.publishEvent(new PasswordResetRequested(member.getEmail(), rawToken));
+    }
+
+    @Transactional
+    public void issueTempPassword(PasswordResetRequestCommand command, String remoteAddress) {
+        if (!captchaVerifier.verify(command.getCaptchaToken(), remoteAddress)) {
+            throw new IllegalArgumentException("CAPTCHA 검증에 실패했습니다.");
+        }
+
+        memberRepository.findByEmail(command.getEmail())
+                .filter(member -> member.getStatus() != MemberStatus.DELETED)
+                .ifPresent(this::issueTempPasswordForMember);
+    }
+
+    private void issueTempPasswordForMember(Member member) {
+        String tempPassword = generateTempPassword();
+        ZonedDateTime expiresAt = ZonedDateTime.now().plusHours(1);
+
+        member.setTempPassword(passwordEncoder.encode(tempPassword), expiresAt);
+        memberRepository.save(member);
+
+        events.publishEvent(new TempPasswordIssued(member.getEmail(), tempPassword));
+    }
+
+    private String generateTempPassword() {
+        StringBuilder sb = new StringBuilder(TEMP_PASSWORD_LENGTH);
+        for (int i = 0; i < TEMP_PASSWORD_LENGTH; i++) {
+            sb.append(TEMP_PASSWORD_CHARS.charAt(RANDOM.nextInt(TEMP_PASSWORD_CHARS.length())));
+        }
+        return sb.toString();
     }
 }

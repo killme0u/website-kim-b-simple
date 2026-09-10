@@ -92,4 +92,21 @@ public class Member extends BaseTimeEntity {
         this.mustChangePassword = false;
         this.tempPasswordExpiresAt = null;
     }
+
+    public void setTempPassword(String passwordHash, ZonedDateTime expiresAt) {
+        this.passwordHash = passwordHash;
+        this.tempPasswordExpiresAt = expiresAt;
+    }
+
+    public void setTempPasswordExpiresAt(ZonedDateTime expiresAt) {
+        this.tempPasswordExpiresAt = expiresAt;
+    }
+
+    public boolean isTempPasswordExpired() {
+        return tempPasswordExpiresAt != null && tempPasswordExpiresAt.isBefore(ZonedDateTime.now());
+    }
+
+    public void setMustChangePassword(boolean flag) {
+        this.mustChangePassword = flag;
+    }
 }
