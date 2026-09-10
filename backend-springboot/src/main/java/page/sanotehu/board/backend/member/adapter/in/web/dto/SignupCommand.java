@@ -1,5 +1,6 @@
 package page.sanotehu.board.backend.member.adapter.in.web.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -34,5 +35,6 @@ public class SignupCommand {
     @Size(max = 4096)
     private String captchaToken;
 
+    @AssertTrue(message = "약관에 동의해야 합니다.")
     private Boolean termsAccepted;
 }

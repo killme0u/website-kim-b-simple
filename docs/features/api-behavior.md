@@ -81,19 +81,18 @@ CSRF 토큰 없이 호출하면 403입니다. 회귀 테스트 `SecurityConfigTe
 | `email` | 이메일 형식 | 예 |
 | `phone` | ~20자 | **예** |
 | `captchaToken` | ~4096자 | 예 |
-| `termsAccepted` | **검증 없음** | — |
+| `termsAccepted` | true만 허용 (`@AssertTrue`) | 예 |
 
 처리 순서 (`member/application/SignupService.java:28-47`)
 
-1. CAPTCHA 검증 → 실패 시 400, **회원 생성 안 됨**
-2. 닉네임 정규화 후 `PENDING` 회원 저장
-3. 24시간 인증 토큰 발급 (해시만 저장)
-4. `SignupCompleted` 이벤트 발행
-5. 커밋 후 비동기로 메일 발송
+1. 약관 동의 검증 → false 또는 null이면 400, **회원 생성 안 됨**
+2. CAPTCHA 검증 → 실패 시 400, **회원 생성 안 됨**
+3. 닉네임 정규화 후 `PENDING` 회원 저장
+4. 24시간 인증 토큰 발급 (해시만 저장)
+5. `SignupCompleted` 이벤트 발행
+6. 커밋 후 비동기로 메일 발송
 
 **메일 발송 실패는 응답에 반영되지 않습니다.** 201을 받아도 메일이 갔다는 보장이 없습니다.
-
-`termsAccepted`는 필드만 있고 `@NotNull`도 없으며 서비스가 읽지도 않습니다. `미결정`
 
 ### `GET /api/members/verify-email?token=`
 

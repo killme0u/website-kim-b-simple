@@ -27,6 +27,9 @@ public class SignupService {
 
     @Transactional
     public Long signup(SignupCommand cmd, String remoteAddress) {
+        if (!Boolean.TRUE.equals(cmd.getTermsAccepted())) {
+            throw new IllegalArgumentException("약관에 동의해야 합니다.");
+        }
         if (!captchaVerifier.verify(cmd.getCaptchaToken(), remoteAddress)) {
             throw new IllegalArgumentException("CAPTCHA 검증에 실패했습니다.");
         }
