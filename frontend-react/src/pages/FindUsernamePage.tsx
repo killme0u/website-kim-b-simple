@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { api, errorMessage } from '../lib/axios';
 import { Alert, Button, Card, Field, Input } from '../shared/ui';
+import { CaptchaField } from '../components/CaptchaField';
 
 export function FindUsernamePage() {
   const [email, setEmail] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
 
   const recover = useMutation({
     mutationFn: async () => (
-      await api.post<{ message?: string }>('/members/username-recovery', { email })
+      await api.post<{ message?: string }>('/members/username-recovery', { email, captchaToken })
     ).data,
   });
 
@@ -32,7 +34,8 @@ export function FindUsernamePage() {
         <Field label="이메일" htmlFor="email">
           <Input id="email" type="email" value={email} onChange={event => setEmail(event.target.value)} required />
         </Field>
-        <Button type="submit" className="w-full" disabled={recover.isPending}>아이디 안내 받기</Button>
+        <CaptchaField value={captchaToken} onChange={setCaptchaToken} />
+        <Button type="submit" className="w-full" disabled={!captchaToken || recover.isPending}>아이디 안내 받기</Button>
       </form>
       <Link to="/login" className="mt-5 block text-center text-sm text-indigo-600 hover:underline">로그인으로 돌아가기</Link>
     </Card>

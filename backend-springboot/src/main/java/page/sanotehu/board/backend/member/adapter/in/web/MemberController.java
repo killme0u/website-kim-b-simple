@@ -115,8 +115,9 @@ public class MemberController {
     @PostMapping("/username-recovery")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public Map<String, String> recoverUsername(
-            @RequestBody @Valid UsernameRecoveryCommand command) {
-        usernameRecoveryService.requestRecovery(command);
+            @RequestBody @Valid UsernameRecoveryCommand command,
+            HttpServletRequest request) {
+        usernameRecoveryService.requestRecovery(command, request.getRemoteAddr());
         return Map.of("message", "가입 이메일로 아이디 안내를 전송했습니다.");
     }
 }
