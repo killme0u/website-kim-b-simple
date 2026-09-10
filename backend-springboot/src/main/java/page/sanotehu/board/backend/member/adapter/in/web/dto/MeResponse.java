@@ -12,6 +12,7 @@ public class MeResponse {
     private Long id;
     private String username;
     private String name;
+    private String nickname;
     private String email;
     private MemberStatus status;
     private MemberRole role;
@@ -22,6 +23,7 @@ public class MeResponse {
                 .id(m.getId())
                 .username(m.getUsername())
                 .name(m.getName())
+                .nickname(m.getNickname())
                 .email(m.getEmail())
                 .status(m.getStatus())
                 .role(m.getRole())

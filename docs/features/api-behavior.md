@@ -55,11 +55,10 @@ CSRF 토큰 없이 호출하면 403입니다. 회귀 테스트 `SecurityConfigTe
 | 성공 | 200 + `MeResponse` |
 | 비로그인 | 401 `AUTH_REQUIRED` |
 
-응답 필드: `id`, `username`, `name`, `email`, `status`, `role`, `mustChangePassword`
+응답 필드: `id`, `username`, `name`, `nickname`, `email`, `status`, `role`, `mustChangePassword`
 (`member/adapter/in/web/dto/MeResponse.java`)
 
-**`nickname`이 응답에 없습니다.** `Member`에는 있지만 `MeResponse`가 담지 않습니다.
-마이페이지에서 닉네임을 보여줄 수 없습니다. `미결정`
+`nickname`이 응답에 포함됩니다(2026-09-10). 선택 항목이며 null일 수 있습니다.
 
 ## 회원
 
