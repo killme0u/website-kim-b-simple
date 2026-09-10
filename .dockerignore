@@ -1,0 +1,52 @@
+# 빌드 컨텍스트에서 제외할 것들.
+#
+# 왜 필요한가
+#   Dockerfile 은 필요한 파일만 골라 COPY 하지만, 컨텍스트 자체는 저장소 전체가 통째로
+#   도커 데몬에 전송된다. 이 저장소는 node_modules 만 219MB 라 매 빌드마다 약 299MB 를 보냈다.
+#   docker context 가 원격 호스트를 가리키면 이 전송이 네트워크를 탄다(PRD 8.9).
+#
+# 주의
+#   여기에 넣은 경로는 COPY 할 수 없게 된다. Dockerfile 이 COPY 하는 경로는 절대 넣지 말 것.
+#   현재 COPY 대상: gradlew, gradle/, build.gradle, settings.gradle,
+#                   backend-springboot/{build.gradle,src},
+#                   frontend-react/{build.gradle,package.json,package-lock.json,src,
+#                                   vite.config.ts,tsconfig*.json,index.html,public}
+
+# 의존성·빌드 산출물 (컨테이너 안에서 새로 만든다)
+**/node_modules
+**/build
+**/.gradle
+
+# VCS
+.git
+.gitignore
+.gitattributes
+.github
+
+# IDE·에이전트 설정
+.idea
+**/.idea
+.vscode
+.agents
+.cursor
+.claude
+.ai
+.flash-mem
+
+# 비밀값. 이미지 안에는 .env 를 넣지 않는다(PRD 8.8).
+.env
+.env.example
+
+# 런타임 업로드 디렉터리. 이미지에는 빈 디렉터리만 만든다.
+uploads
+
+# 문서·도구 스크립트
+docs
+**/*.md
+patch.groovy
+write-utf8.ps1
+
+# 컨텍스트 안에서 쓰이지 않는 것
+Dockerfile
+.dockerignore
+docker-compose.yml

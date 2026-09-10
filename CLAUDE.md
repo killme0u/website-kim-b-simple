@@ -77,3 +77,39 @@ Forbidden examples include, but are not limited to:
 
 Use `flash-mem update` to refresh this block if it changes.
 <!-- flash-mem-protocol-end -->
+
+# flash-mem — Local Environment Workarounds
+
+Verified 2026-09-10 on flash-mem 0.4.0 (latest on npm), better-sqlite3 11.10.0, Node 24.19.0, Windows.
+This section sits OUTSIDE the `flash-mem-protocol` block above so `flash-mem update` will not overwrite it.
+Where the two conflict, this section wins.
+
+## Never call these tools — they abort the MCP server
+These tools open the SQLite store and then scan the workspace for markdown. On Node 24 the resulting GC
+finalizes a better-sqlite3 `Statement` and the process dies with SIGABRT (exit 134,
+`node::RemoveEnvironmentCleanupHook ... Assertion failed: (env) != nullptr`). The MCP client only
+surfaces this as "Connection closed", so the real cause is invisible.
+
+- `token_report` — crashes every time
+- `prepare_context` — crashes every time
+- `doc_synthesis` — crashes every time
+- `memory_synthesis` — crashes intermittently (~1 in 4); the most dangerous, it can kill the server mid-task
+- `promote_shared_lesson`, `sync_shared_lessons` — same code path, treat as unsafe
+
+Not a flash-mem logic bug. Minimal repro with no flash-mem logic involved: open `.flash-mem/flashmem.sqlite`
+with better-sqlite3 and recursively `readdirSync`/`statSync` the project tree in the same process → abort 5/5;
+either half alone is clean. No upstream fix exists yet (0.4.0 is the newest release). Re-test after upgrading
+Node or better-sqlite3 and delete this subsection once the tools pass.
+
+Unaffected and safe to use: `get_project_summary`, `search_memory`, `get_relevant_context`, `add_memory`,
+`update_memory`, `delete_memory`, `export_markdown`. The Pre-Flight Gate above still works as written.
+
+## Always pass these arguments
+Two tools ignore `project_path` when resolving a secondary argument and silently corrupt state on the default:
+
+- `add_memory` — ALWAYS pass `projectName: "website-kim-b-simple"`. Without it,
+  `MemoryEntryService.resolveProject` falls back to the literal `'flash-mem-project'` and
+  `upsertByRootPath` renames the project row on every single call.
+- `export_markdown` — ALWAYS pass `workspaceRoot: "D:\zz_my\work\idea\website-kim-b-simple"`. Without it
+  `workspaceRoot` defaults to `"."`, resolving to a different project id and overwriting
+  `.flash-mem/exports/project-summary.md` with an empty `project: "-"` / `totalEntries: 0` backup.

@@ -6,7 +6,7 @@
 |---|---|
 | 백엔드 | Spring Boot 4.1.1, Spring Security 7, Spring Data JPA, Jakarta Mail |
 | 데이터베이스 | PostgreSQL, Flyway (마이그레이션) |
-| 프론트엔드 | React 19.2, TanStack Query v5, Zustand v5, Vite, COSS UI (DaisyUI 교체 예정) |
+| 프론트엔드 | React 19.2, TanStack Query v5, Zustand v5, Vite, Tailwind CSS v4, COSS UI |
 | 빌드 | Gradle 멀티 프로젝트 (Groovy DSL) |
 | 개발 환경 | IntelliJ IDEA (백엔드), WebStorm (프론트엔드) |
 
@@ -423,6 +423,26 @@ public class Post {
 # 4. 데이터베이스 스키마
 
 Flyway 마이그레이션으로 관리합니다. `spring.jpa.hibernate.ddl-auto`는 `validate`로 고정하고, 스키마 변경은 반드시 마이그레이션 파일로만 수행합니다.
+
+### clean은 막아 둔다
+
+```yaml
+spring:
+  flyway:
+    clean-disabled: true            # 스키마 전체 삭제 금지
+    clean-on-validation-error: false
+```
+
+한때 이 두 값이 `false` / `true`였습니다. 그 조합에서는 마이그레이션 **검증이 실패하면 앱이 뜨는 것만으로 대상 스키마가 통째로 삭제되고 다시 만들어집니다.** 개발 PC마다 다른 DB를 바라보는 구성(8.7)에서는 한쪽 DB의 체크섬이 어긋난 순간 그 DB의 데이터가 사라집니다.
+
+검증 실패는 삭제가 아니라 **기동 실패**로 드러나야 합니다. 실제로 `flyway_schema_history`의 체크섬을 어긋나게 하고 기동하면 다음과 같이 멈추고, 스키마와 데이터는 그대로 남습니다.
+
+```
+FlywayValidateException: Validate failed: Migrations have failed validation
+Migration checksum mismatch for migration version 1
+```
+
+스키마가 실제로 어긋났다면 마이그레이션을 새로 추가하거나, 버려도 되는 DB임을 확인한 뒤 직접 처리합니다.
 
 ## 4.1 DDL
 
@@ -1365,9 +1385,20 @@ public void delete(Long postId, Optional<Member> actor, String rawGuestPassword)
 
 # 7. 프론트엔드 구성
 
-## 7.0 UI 컴포넌트 기준 — COSS UI로 DaisyUI 교체
+## 7.0 UI 컴포넌트 기준 — COSS UI (DaisyUI 교체 완료)
 
-현재 `frontend-react`는 Tailwind CSS v3와 DaisyUI 4를 사용하고 있다. UI 컴포넌트는 COSS UI로 단계적으로 교체하며, 새 화면에는 DaisyUI 전용 클래스(`btn`, `card`, `navbar`, `dropdown` 등)를 추가하지 않는다. 교체 실행 계획은 `docs/plan.md`에 관리한다.
+`frontend-react`는 **Tailwind CSS v4**와 COSS UI를 사용한다(커밋 `667047a`). DaisyUI 4 의존성과 전용 클래스는 제거됐고, 아래의 단계적 마이그레이션 순서와 전환 완료 기준은 완료된 작업의 기록이다. 새 화면에도 DaisyUI 전용 클래스(`btn`, `card`, `navbar`, `dropdown` 등)를 추가하지 않는다.
+
+### Tailwind v4 — 설정 파일이 없다
+
+v4는 설정을 CSS로 옮겼다. `tailwind.config.js`와 `postcss.config.js`는 **존재하지 않으며**, 그 자리를 대신하는 곳은 다음 두 곳이다.
+
+| v3 | v4 |
+|---|---|
+| `tailwind.config.js`의 `content`·`theme`·`plugins` | `src/index.css`의 `@import 'tailwindcss'`, `@plugin '@tailwindcss/typography'` |
+| `postcss.config.js`의 `tailwindcss`·`autoprefixer` | `vite.config.ts`의 `@tailwindcss/vite` 플러그인 (8.4) |
+
+두 파일을 **경로로 직접 참조하는 곳**이 있으면 v4 전환 때 함께 고쳐야 한다. 실제로 `Dockerfile`이 두 파일을 `COPY`하고 있어서 `docker compose up -d --build`가 깨져 있었다(8.9).
 
 ### COSS Skills 설치
 
@@ -1676,6 +1707,7 @@ const save = useDraftStore((s) => s.save)
 website-kim-b-simple/
 ├── settings.gradle
 ├── build.gradle
+├── .dockerignore              ← 빌드 컨텍스트 제외 목록 (8.9)
 ├── .env.example               ← 커밋되는 양식
 ├── .env                       ← 실제 비밀값. .gitignore 대상이라 커밋되지 않는다
 ├── buildSrc/
@@ -1759,8 +1791,12 @@ producer/consumer configuration으로 연결하면 다른 프로젝트의 내부
 ## 8.4 vite.config.ts
 
 ```ts
+import tailwindcss from '@tailwindcss/vite'
+
 export default defineConfig({
-  plugins: [react()],
+  // Tailwind v4 는 postcss.config.js 대신 이 플러그인으로 붙는다 (7.0)
+  plugins: [react(), tailwindcss()],
+  resolve: { alias: { '@': path.resolve(import.meta.dirname, './src') } },
   build: { outDir: 'build/dist', emptyOutDir: true },
   server: {
     port: 5173,
@@ -1844,9 +1880,34 @@ services:
 
 `docker compose`는 저장소 루트의 `.env`를 자동으로 읽으므로, SMTP 값은 `environment:`에서 `${MAIL_SMTP_HOST:-}`처럼 참조해 컨테이너로 넘깁니다. 이미지 안에는 `.env`를 넣지 않습니다(`Dockerfile`이 복사하지 않습니다).
 
-## 8.8 로컬 비밀값 — `.env`
+### DB 접속 주소는 PC마다 다르다 — `PGSQL_HOST` / `PGSQL_PORT`
 
-SMTP 계정과 CAPTCHA secret은 저장소에 커밋하지 않습니다. 커밋되는 것은 양식인 `.env.example` 뿐이고, 실제 값은 각자 `.env`에 채웁니다.
+작업 PC(회사·집·학원)마다 Docker 호스트가 달라서 DB 주소를 `application.yml`에 고정할 수 없습니다. 주소만 저장소 루트 `.env`에서 주입하고, 나머지 URL 형태는 그대로 둡니다.
+
+```yaml
+# application.yml
+spring:
+  datasource:
+    url: jdbc:postgresql://${PGSQL_HOST:192.168.29.124}:${PGSQL_PORT:5432}/board_db
+```
+
+```properties
+# .env — PC 를 옮길 때 이 두 줄만 바꾼다
+PGSQL_HOST=192.168.29.124
+PGSQL_PORT=5432
+```
+
+| 상황 | `PGSQL_HOST` |
+|---|---|
+| 같은 PC에서 `docker compose up -d postgres` | `localhost` |
+| 다른 PC·서버의 Docker | 그 PC의 IP |
+| 앱까지 컨테이너로 배포 | 쓰이지 않는다. `docker-compose.yml`의 `SPRING_DATASOURCE_URL`이 URL 전체를 덮어쓴다 |
+
+다른 placeholder와 같은 이유로 기본값(`:`)을 둡니다(6.1의 표 참고). `.env`가 없어도 기동은 됩니다. 다만 기본값은 **키가 아예 없을 때만** 쓰입니다 — `PGSQL_HOST=`처럼 줄은 두고 값만 비우면 빈 문자열이 그대로 호스트가 되어 접속이 깨집니다.
+
+## 8.8 로컬 비밀값·환경별 설정 — `.env`
+
+SMTP 계정과 CAPTCHA secret은 저장소에 커밋하지 않습니다. 커밋되는 것은 양식인 `.env.example` 뿐이고, 실제 값은 각자 `.env`에 채웁니다. 비밀값은 아니지만 **PC마다 달라지는 값**도 같은 파일에서 주입합니다(8.7의 `PGSQL_HOST`·`PGSQL_PORT`).
 
 ```powershell
 Copy-Item .env.example .env   # 저장소 루트에서 1회
@@ -1863,6 +1924,53 @@ Copy-Item .env.example .env   # 저장소 루트에서 1회
 `.gitignore`에 `.env`가 실제로 등재돼 있는지는 `git check-ignore -v .env`로 확인합니다. 이 한 줄이 빠지면 앱 비밀번호가 그대로 커밋됩니다.
 
 값 목록과 SMTP 폴백 규칙은 6.1의 「SMTP 설정 주입」과 `README.md`를 참고합니다.
+
+## 8.9 Docker 이미지 빌드 — `Dockerfile`
+
+`docker compose up -d --build`는 멀티스테이지로 이미지를 만듭니다. builder 스테이지가 Gradle 전체 빌드를 수행하고, runtime 스테이지는 실행 아티팩트 하나만 가져갑니다.
+
+### COPY 목록은 프론트엔드 파일 구성과 함께 움직인다
+
+builder 스테이지는 필요한 파일을 **하나씩 나열해** 복사합니다. 레이어 캐시에는 유리하지만, 프론트엔드 파일 구성이 바뀌면 이 목록도 같이 고쳐야 합니다. 실제로 두 번 어긋났습니다.
+
+| 증상 | 원인 |
+|---|---|
+| `COPY failed: ... frontend-react/tailwind.config.js: file does not exist` | Tailwind v4 전환(`667047a`)에서 `tailwind.config.js`·`postcss.config.js`가 삭제됐는데 `COPY` 목록에 남아 있었다 (7.0) |
+| 이미지에서 `/favicon.svg`가 404 | `frontend-react/public/`을 복사하지 않았다. Vite가 `build/dist`로 그대로 옮기는 정적 자산이라 로컬 빌드에는 있고 이미지에만 빠진다 |
+
+### 빌드 컨텍스트 — `.dockerignore`
+
+`Dockerfile`은 필요한 파일만 골라 `COPY`하지만, **컨텍스트 자체는 저장소 전체가 도커 데몬으로 전송됩니다.** `.dockerignore`가 없을 때 이 저장소는 매 빌드마다 약 299MB를 보냈고, 그중 219MB가 `frontend-react/node_modules`였습니다. `docker context`가 원격 호스트를 가리키면 이 전송이 그대로 네트워크를 탑니다.
+
+| | 컨텍스트 전송량 |
+|---|---|
+| `.dockerignore` 없음 | 298.9MB |
+| `.dockerignore` 적용 | **210.8kB** |
+
+제외 대상은 의존성·빌드 산출물(`**/node_modules`, `**/build`, `**/.gradle`), VCS·IDE·에이전트 설정, `docs`와 마크다운, 그리고 `.env`입니다.
+
+```
+# 주의: 여기에 넣은 경로는 COPY 할 수 없게 된다.
+# Dockerfile 이 COPY 하는 경로는 절대 넣지 말 것.
+```
+
+`**/build`는 디렉터리 이름 `build`만 가리키므로 `build.gradle`에는 영향이 없습니다.
+
+### 실행 아티팩트는 `.jar`가 아니라 `.war`
+
+`backend-springboot/build.gradle`이 `war` 플러그인을 쓰므로 Spring Boot는 `bootJar`가 아니라 `bootWar`를 만듭니다. `build/libs`에 남는 것은 셋입니다.
+
+| 파일 | `java -jar` 실행 |
+|---|---|
+| `backend-springboot-0.0.1-SNAPSHOT.war` | **가능** (bootWar). 이미지가 가져가는 것 |
+| `backend-springboot-0.0.1-SNAPSHOT-plain.war` | 불가 (클래스만) |
+| `backend-springboot-0.0.1-SNAPSHOT-plain.jar` | 불가 (클래스만) |
+
+`...-SNAPSHOT.jar`는 **만들어지지 않습니다.** `COPY --from=builder`가 이 이름을 찾고 있어 이미지 빌드가 실패했습니다. 파일 이름에 버전이 박혀 있으므로 `version`을 올리면 `Dockerfile`도 함께 고쳐야 합니다.
+
+### 원격 Docker 호스트를 쓸 때
+
+`docker context`가 원격 호스트를 가리키면 컨테이너는 그 서버에서 뜨고, 게시된 포트도 개발 PC의 `localhost`가 아니라 **그 서버 주소**에서 열립니다(예: `http://192.168.0.83:8080`). 8.7에서 `PGSQL_HOST`를 PC마다 맞춰야 하는 것과 같은 이유입니다.
 
 ---
 
@@ -1886,6 +1994,8 @@ Copy-Item .env.example .env   # 저장소 루트에서 1회
 - **자료실과 이메일을 마지막에** — 둘 다 외부 시스템(파일 시스템, SMTP)이 개입해 실패 모드가 다릅니다. 앞의 뼈대가 없으면 디버깅 대상이 두 배가 됩니다.
 
 ### 프론트엔드 UI 전환 순서
+
+> 이 단계는 `667047a`에서 완료됐다(Tailwind v4 + COSS UI). 아래는 진행 기록이다.
 
 DaisyUI 교체는 기능 구현과 분리해 공통 UI부터 진행한다. 먼저 COSS UI 기반과 Tailwind 호환성을 확인하고 `RootLayout`을 교체한 뒤, 게시판 목록·검색, 게시글 상세·작성, 인증·댓글 순으로 진행한다. 각 단계에서 TanStack Query, URL `searchParams`, Zustand의 상태 경계를 유지하며, 마지막 단계에 DaisyUI 의존성과 전용 클래스를 제거한다. 세부 작업 목록은 `docs/plan.md`를 따른다.
 

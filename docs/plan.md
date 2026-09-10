@@ -25,6 +25,7 @@
 - CAPTCHA 누락·실패·만료·provider 장애는 일반화된 오류로 반환하고 회원을 생성하지 않는다.
 - 이메일 인증 완료·재발송 API를 추가하고 `PENDING` 회원을 검증 후 `ACTIVE`로 전환한다.
 - SMTP 호스트·포트·계정·발신자 주소는 저장소 루트 `.env`에서 주입하고, 커밋되는 것은 `.env.example` 양식뿐이다.
+- DB 접속 주소도 `.env`의 `PGSQL_HOST`·`PGSQL_PORT`로 주입해, 작업 PC(회사·집·학원)마다 다른 Docker 호스트를 코드 수정 없이 흡수한다.
 - SMTP 호스트나 계정이 비어 있으면 실제 발송 대신 로그 전용 발송기로 폴백해 개발 환경에서 가입 흐름이 막히지 않도록 한다.
 - 비밀번호 찾기·재설정·변경 API는 임시 비밀번호 만료와 `must_change_password` 정책을 유지한다.
 - 필요한 DB 변경은 별도 Flyway migration으로 작성한다.
@@ -65,8 +66,11 @@
 - 앞뒤 공백만 다른 닉네임이 중복 확인에서 "사용 가능"으로 보이지 않는다(`MemberControllerTest`, `MemberTest`).
 - 회원가입·로그인·로그아웃·마이페이지·게시판·댓글 흐름이 유지된다.
 - `.env`가 없어도 앱이 기동하고, `.env`의 SMTP 값이 채워지면 실제 발송으로 전환된다.
+- `.env`의 `PGSQL_HOST`·`PGSQL_PORT`만 바꾸면 다른 PC의 Docker PostgreSQL로 접속 대상이 바뀐다.
 - `git check-ignore -v .env`가 `.env`를 무시 대상으로 보고한다.
 - `npm run lint`, `npm run build`, 백엔드 테스트 또는 Gradle 빌드가 통과한다.
+- `docker compose up -d --build`가 성공하고, 컨테이너가 `/`, `/favicon.svg`, `/api/boards`에 200을 응답한다(PRD 8.9).
+- Flyway 마이그레이션 검증이 실패하면 스키마가 삭제되지 않고 기동이 실패한다(PRD 4장).
 
 ## 선결 결정
 

@@ -48,6 +48,7 @@ docker compose up -d --build
 # Postgres 단일 컨테이너 구동
 docker compose up -d postgres
 ```
+   다른 PC나 서버의 Docker를 쓴다면 저장소 루트 `.env`의 `PGSQL_HOST`를 그 주소로 바꿉니다(아래 표).
 2. Spring 백엔드 애플리케이션 시작:
 ```bash
 ./gradlew :backend-springboot:bootRun
@@ -62,7 +63,7 @@ npm run dev
 
 ## 메일 발송 설정
 
-SMTP 계정 정보와 CAPTCHA secret 같은 비밀값은 **저장소 루트의 `.env`** 에서 주입합니다.
+SMTP 계정 정보와 CAPTCHA secret 같은 비밀값, 그리고 **PC마다 달라지는 DB 접속 주소**는 **저장소 루트의 `.env`** 에서 주입합니다.
 `.env`는 `.gitignore` 대상이라 커밋되지 않으며, 커밋되는 것은 양식인 `.env.example` 뿐입니다.
 
 ```powershell
@@ -75,6 +76,8 @@ Copy-Item .env.example .env   # 저장소 루트에서 1회
 
 | 키 | 설명 |
 |---|---|
+| `PGSQL_HOST` | PostgreSQL 호스트. 같은 PC의 컨테이너면 `localhost`, 다른 PC의 Docker면 그 PC의 IP |
+| `PGSQL_PORT` | 기본 `5432` |
 | `MAIL_SMTP_HOST` | SMTP 호스트. 비우면 실제 발송 대신 로그로만 남습니다 |
 | `MAIL_SMTP_PORT` | 기본 `465` |
 | `MAIL_SMTP_SSL` / `MAIL_SMTP_STARTTLS` | `465`면 `true`/`false`, `587`이면 `false`/`true` |
