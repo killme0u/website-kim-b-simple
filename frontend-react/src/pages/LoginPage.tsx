@@ -32,7 +32,11 @@ export function LoginPage() {
     onSuccess: async user => {
       setUser(user);
       await refreshSession();
-      navigate(from, { replace: true });
+      if (user.mustChangePassword) {
+        navigate('/change-password', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     },
   });
 

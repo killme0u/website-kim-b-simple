@@ -7,6 +7,7 @@ import org.springframework.security.web.authentication.rememberme.PersistentToke
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import page.sanotehu.board.backend.captcha.application.CaptchaVerifier;
+import page.sanotehu.board.backend.member.adapter.in.web.dto.ChangePasswordCommand;
 import page.sanotehu.board.backend.member.adapter.in.web.dto.PasswordResetChangeCommand;
 import page.sanotehu.board.backend.member.adapter.in.web.dto.PasswordResetRequestCommand;
 import page.sanotehu.board.backend.member.domain.Member;
@@ -77,6 +78,15 @@ public class VerificationService {
         Member member = token.getMember();
         member.changePassword(passwordEncoder.encode(command.getNewPassword()));
         token.markUsed();
+        persistentTokenRepository.removeUserTokens(member.getUsername());
+    }
+
+    @Transactional
+    public void changePasswordByUser(Long userId, ChangePasswordCommand command) {
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        member.changePassword(passwordEncoder.encode(command.getNewPassword()));
+        memberRepository.save(member);
         persistentTokenRepository.removeUserTokens(member.getUsername());
     }
 

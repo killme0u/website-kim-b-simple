@@ -9,6 +9,7 @@ import { PostPage } from './pages/PostPage';
 import { PostEditPage } from './pages/PostEditPage';
 import { FindUsernamePage } from './pages/FindUsernamePage';
 import { FindPasswordPage } from './pages/FindPasswordPage';
+import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { useSessionSync } from './lib/session';
 
@@ -25,6 +26,7 @@ export function App() {
           <Route path="verify-email" element={<VerifyEmailPage />} />
           <Route path="find-username" element={<FindUsernamePage />} />
           <Route path="find-password" element={<FindPasswordPage />} />
+          <Route path="change-password" element={<ChangePasswordPage />} />
           <Route path="me" element={<MyPage />} />
           <Route path="boards/:slug" element={<BoardPage />} />
           <Route path="boards/:slug/posts/new" element={<PostEditPage />} />

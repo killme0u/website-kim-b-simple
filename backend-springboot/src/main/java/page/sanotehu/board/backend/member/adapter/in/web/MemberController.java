@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,11 +12,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import page.sanotehu.board.backend.common.AuthenticationRequiredException;
+import page.sanotehu.board.backend.member.adapter.in.web.dto.ChangePasswordCommand;
 import page.sanotehu.board.backend.member.adapter.in.web.dto.EmailVerificationResendCommand;
 import page.sanotehu.board.backend.member.adapter.in.web.dto.PasswordResetChangeCommand;
 import page.sanotehu.board.backend.member.adapter.in.web.dto.PasswordResetRequestCommand;
 import page.sanotehu.board.backend.member.adapter.in.web.dto.SignupCommand;
 import page.sanotehu.board.backend.member.adapter.in.web.dto.UsernameRecoveryCommand;
+import page.sanotehu.board.backend.member.application.CustomUserDetails;
 import page.sanotehu.board.backend.member.application.SignupService;
 import page.sanotehu.board.backend.member.application.UsernameRecoveryService;
 import page.sanotehu.board.backend.member.application.VerificationService;
@@ -77,6 +81,15 @@ public class MemberController {
     public Map<String, String> changePassword(
             @RequestBody @Valid PasswordResetChangeCommand command) {
         verificationService.changePassword(command);
+        return Map.of("status", "changed");
+    }
+
+    @PostMapping("/change-password")
+    public Map<String, String> changePasswordByUser(
+            @RequestBody @Valid ChangePasswordCommand command,
+            @AuthenticationPrincipal CustomUserDetails user) {
+        if (user == null) throw new AuthenticationRequiredException("Login required");
+        verificationService.changePasswordByUser(user.getId(), command);
         return Map.of("status", "changed");
     }
     
