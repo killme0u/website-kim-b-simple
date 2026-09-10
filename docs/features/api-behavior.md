@@ -131,6 +131,30 @@ CSRF 토큰 없이 호출하면 403입니다. 회귀 테스트 `SecurityConfigTe
 CAPTCHA 실패 시에만 400이 납니다. 계정 유무는 응답에 드러나지 않습니다.
 토큰 유효 기간은 1시간입니다.
 
+### `POST /api/members/password-reset/issue-temp-password`
+
+| 항목 | 값 |
+|---|---|
+| 성공 | **202** + `{ "status": "issued" }` |
+| CAPTCHA | **필요** |
+| 인증 | 불필요 |
+
+**F-113: 임시 비밀번호 발급**
+
+CAPTCHA 실패 시에만 400이 납니다. 계정 유무는 응답에 드러나지 않습니다.
+임시 비밀번호는 이메일로 발송되며 1시간 유효 기간을 가집니다.
+
+#### 로그인 프로세스
+1. 임시 비밀번호로 로그인 → 성공
+2. 로그인 후 `mustChangePassword = true` 자동 설정
+3. `/api/me` 응답에 `mustChangePassword = true` 표시
+4. 클라이언트는 비밀번호 변경 페이지로 리다이렉트
+
+#### 만료 처리
+- 임시 비밀번호 유효 기간: 1시간
+- 만료된 임시 비밀번호로 로그인 시도 → 401 (CredentialsExpiredException)
+- 비밀번호 변경 시 `mustChangePassword = false`, `tempPasswordExpiresAt = null` 초기화
+
 ### `POST /api/members/password-reset/change`
 
 | 항목 | 값 |

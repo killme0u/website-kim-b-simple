@@ -32,7 +32,7 @@
 | F-110 | 비밀번호 재설정 요청 | `POST /api/members/password-reset/request` | `VerificationService.requestPasswordReset` | `FindPasswordPage.tsx` |
 | F-111 | 비밀번호 변경 | `POST /api/members/password-reset/change` | `VerificationService.changePassword` | `FindPasswordPage.tsx` |
 | F-112 | 현재 사용자 조회 | `GET /api/me` | `AuthController` | `lib/session.ts` |
-| F-113 | 임시 비밀번호 발급 | — | **없음** | — |
+| F-113 | 임시 비밀번호 발급 | `POST /api/members/password-reset/issue-temp-password` | `VerificationService.issueTempPassword` | `FindPasswordPage.tsx` |
 
 ### F-102 CAPTCHA 상세 `확인됨`
 

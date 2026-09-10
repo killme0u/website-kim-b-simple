@@ -64,6 +64,15 @@ public class MemberController {
         return Map.of("status", "requested");
     }
 
+    @PostMapping("/password-reset/issue-temp-password")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public Map<String, String> issueTempPassword(
+            @RequestBody @Valid PasswordResetRequestCommand command,
+            HttpServletRequest request) {
+        verificationService.issueTempPassword(command, request.getRemoteAddr());
+        return Map.of("status", "issued");
+    }
+
     @PostMapping("/password-reset/change")
     public Map<String, String> changePassword(
             @RequestBody @Valid PasswordResetChangeCommand command) {
