@@ -42,7 +42,7 @@ class ChangePasswordTest {
                 "test@example.com",
                 "01012345678"
         );
-        member.setStatus(MemberStatus.ACTIVE);
+        member.verifyEmail();
         member.setMustChangePassword(true);
 
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
