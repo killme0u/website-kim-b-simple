@@ -24,6 +24,10 @@ public class PostViewLog {
     private Long memberId;
 
     @Id
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
+    @Id
     @Column(name = "viewed_on")
     private LocalDate viewedOn;
 
@@ -33,6 +37,15 @@ public class PostViewLog {
     public PostViewLog(Long postId, Long memberId, LocalDate viewedOn) {
         this.postId = postId;
         this.memberId = memberId;
+        this.ipAddress = null;
+        this.viewedOn = viewedOn;
+        this.createdAt = ZonedDateTime.now();
+    }
+
+    public PostViewLog(Long postId, String ipAddress, LocalDate viewedOn) {
+        this.postId = postId;
+        this.memberId = null;
+        this.ipAddress = ipAddress;
         this.viewedOn = viewedOn;
         this.createdAt = ZonedDateTime.now();
     }

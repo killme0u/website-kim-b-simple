@@ -1,11 +1,14 @@
 package page.sanotehu.board.backend.post.application;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import page.sanotehu.board.backend.attachment.adapter.in.web.dto.FileResponse;
 import page.sanotehu.board.backend.attachment.domain.Attachment;
 import page.sanotehu.board.backend.attachment.domain.AttachmentRepository;
@@ -48,11 +51,14 @@ public class PostService {
         post.getBoard().checkReadable(actor);
 
         if (actor.isPresent()) {
-            if (viewLogRepository.tryRecord(id, actor.get().getId(), LocalDate.now()) > 0) {
+            if (viewLogRepository.tryRecordMember(id, actor.get().getId(), LocalDate.now()) > 0) {
                 postRepository.increaseViewCount(id);
             }
         } else {
-            postRepository.increaseViewCount(id);
+            String clientIp = getClientIp();
+            if (clientIp != null && viewLogRepository.tryRecordGuest(id, clientIp, LocalDate.now()) > 0) {
+                postRepository.increaseViewCount(id);
+            }
         }
 
         boolean isAdmin = actor.map(m -> m.getRole() == MemberRole.ADMIN).orElse(false);
@@ -69,6 +75,19 @@ public class PostService {
             .toList();
 
         return PostResponse.from(post, memberId, isAdmin, atDtos);
+    }
+
+    private String getClientIp() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs == null) {
+            return null;
+        }
+        HttpServletRequest request = attrs.getRequest();
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+            return xForwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @Transactional

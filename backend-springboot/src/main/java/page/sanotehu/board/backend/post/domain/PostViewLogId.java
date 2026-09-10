@@ -13,5 +13,6 @@ import java.time.LocalDate;
 public class PostViewLogId implements Serializable {
     private Long postId;
     private Long memberId;
+    private String ipAddress;
     private LocalDate viewedOn;
 }
