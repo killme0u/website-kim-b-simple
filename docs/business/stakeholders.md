@@ -71,13 +71,11 @@ CAPTCHA는 `mode=fake`로 고정 토큰만 통과시킵니다(`ConfiguredCaptcha
 
 `PRD.md` 10장과 `plan.md`의 선결 결정 목록에 있는 항목들은 담당자가 지정되지 않았습니다.
 
-| 결정 사항 | 출처 |
-|---|---|
-| 운영 CAPTCHA provider와 키 주입 방식 | `plan.md` 선결 결정 #1 |
-| Google 로그인 제공 여부 | `plan.md` #3 |
-| 로그인 유지의 세션·토큰 정책 | `plan.md` #4 |
-| 아이디 찾기 본인 확인 방식 | `plan.md` #5 |
-| 가입 흐름 정본 (가입 전 인증 vs 가입 후 `PENDING` 인증) | `todo.md` 후속 검토 |
+| 결정 사항 | 출처 | 상태 |
+|---|---|---|
+| 운영 CAPTCHA provider와 키 주입 방식 | `plan.md` 선결 결정 #1 | **결정됨(2026-09-10): Turnstile** |
+| 아이디 찾기 본인 확인 방식 | `plan.md` 선결 결정 #5 | 보류 |
+| 가입 흐름 정본 (가입 전 인증 vs 가입 후 `PENDING` 인증) | `todo.md` 후속 검토 | 보류 |
 
 ## 관련 문서
 

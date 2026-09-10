@@ -75,8 +75,11 @@
 ## 선결 결정
 
 1. 운영 CAPTCHA provider와 키 주입 방식
+   → **결정 (2026-09-10)**: Cloudflare Turnstile 사용. `backend-springboot`의 `ConfiguredCaptchaVerifier`는 이미 Turnstile의 JSON 검증 API와 호환됨. 로컬 개발은 `mode=fake` 유지, 운영은 `.env`에서 `mode=remote` + 실제 secret 지정. Turnstile 테스트 키로도 `remote` 모드 검증 가능(`CAPTCHA_SECRET=1x0000000000000000000000000000000AA`).
 2. ~~닉네임을 `member.nickname`으로 추가할지 기존 `name`을 표시명으로 사용할지~~
    → **결정 (2026-09-10)**: `member.nickname` 컬럼 추가(`V3__add_member_nickname.sql`), 선택 항목이며 부분 유니크 인덱스로 중복을 막는다.
-3. Google 로그인 제공 여부
-4. 로그인 유지의 세션·토큰 정책
+3. ~~Google 로그인 제공 여부~~
+   → **결정 (2026-09-10)**: 제공하지 않음(최종). OAuth 계약·운영 키를 준비하지 않으며, 소셜 로그인 UI·API를 추가하지 않는다.
+4. ~~로그인 유지의 세션·토큰 정책~~
+   → **결정 (2026-09-10)**: 세션 쿠키 인증은 유지하고, "로그인 상태 유지" 체크 시 Spring Security `PersistentTokenBasedRememberMeServices`로 30일짜리 별도 remember-me 쿠키를 추가 발급(`V6__add_persistent_logins_table.sql`). 비밀번호 변경 시 해당 계정의 저장된 remember-me 토큰을 모두 폐기.
 5. 아이디 찾기 본인 확인 방식

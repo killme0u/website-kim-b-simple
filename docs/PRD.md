@@ -1420,7 +1420,7 @@ COSS Skills는 AI 코딩 보조 도구에 COSS UI 컴포넌트 API, 조합 패�
 - `POST /api/members/verify-email`: 이메일 인증 토큰을 1회 검증하고 `PENDING` 회원을 `ACTIVE`로 전환한다.
 - `POST /api/members/verify-email/resend`: 만료되지 않은 정책과 rate limit을 적용해 인증 메일을 재발송한다.
 - 비밀번호 찾기·재설정은 임시 비밀번호 만료와 `must_change_password` 정책을 따른다.
-- Google 로그인은 OAuth provider 계약이 확정되기 전까지 제공하지 않으며, UI에 가짜 성공 경로를 두지 않는다.
+- Google 로그인(소셜 로그인)은 제공하지 않는다(2026-09-10 결정, 최종). UI에 가짜 성공 경로를 두지 않는다.
 
 세부 실행 계획은 `docs/plan.md`에 기록한다.
 

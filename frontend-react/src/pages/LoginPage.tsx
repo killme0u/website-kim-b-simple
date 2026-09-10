@@ -10,6 +10,7 @@ import type { User } from '../types';
 export function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const setUser = useAuthStore(state => state.setUser);
   const refreshSession = useRefreshSession();
   const navigate = useNavigate();
@@ -20,7 +21,9 @@ export function LoginPage() {
 
   const login = useMutation({
     mutationFn: async () => {
-      await api.post('/auth/login', new URLSearchParams({ username, password }), {
+      const body = new URLSearchParams({ username, password });
+      if (rememberMe) body.set('remember-me', 'true');
+      await api.post('/auth/login', body, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       const { data } = await api.get<User>('/me');
@@ -54,7 +57,12 @@ export function LoginPage() {
         </Field>
         <div className="flex items-center justify-between text-sm">
           <label className="flex items-center gap-2 text-slate-600">
-            <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-indigo-600" />
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={event => setRememberMe(event.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600"
+            />
             로그인 상태 유지
           </label>
           <span className="flex gap-3">

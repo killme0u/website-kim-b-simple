@@ -3,6 +3,7 @@ package page.sanotehu.board.backend.member.application;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import page.sanotehu.board.backend.captcha.application.CaptchaVerifier;
@@ -33,6 +34,7 @@ public class VerificationService {
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher events;
     private final CaptchaVerifier captchaVerifier;
+    private final PersistentTokenRepository persistentTokenRepository;
 
     @Transactional
     public void verifyEmail(String rawToken) {
@@ -72,8 +74,10 @@ public class VerificationService {
         if (!token.isUsable(PASSWORD_RESET)) {
             throw new IllegalArgumentException("만료되었거나 이미 사용된 비밀번호 재설정 토큰입니다.");
         }
-        token.getMember().changePassword(passwordEncoder.encode(command.getNewPassword()));
+        Member member = token.getMember();
+        member.changePassword(passwordEncoder.encode(command.getNewPassword()));
         token.markUsed();
+        persistentTokenRepository.removeUserTokens(member.getUsername());
     }
 
     private void issueEmailVerification(Member member) {
@@ -107,6 +111,8 @@ public class VerificationService {
 
         member.setTempPassword(passwordEncoder.encode(tempPassword), expiresAt);
         memberRepository.save(member);
+
+        persistentTokenRepository.removeUserTokens(member.getUsername());
 
         events.publishEvent(new TempPasswordIssued(member.getEmail(), tempPassword));
     }

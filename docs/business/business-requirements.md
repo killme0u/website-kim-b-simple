@@ -27,7 +27,7 @@
 | BR-001-8 | 아이디를 이메일로 찾을 수 있다 | 구현됨 | `member/application/UsernameRecoveryService.java` |
 | BR-001-9 | 비밀번호를 이메일 링크로 재설정할 수 있다 | 구현됨 | `VerificationService.java:52-73` |
 | BR-001-10 | 임시 비밀번호를 발급하고 만료·강제변경을 강제한다 | **미구현** | 컬럼과 `Member.changePassword`는 있으나 발급 경로가 없음 |
-| BR-001-11 | 소셜(Google) 로그인 | **미구현** | `plan.md` 선결 결정 #3. 의도적 보류 |
+| BR-001-11 | 소셜(Google) 로그인 | **제공 안 함(최종 결정)** | `plan.md` 선결 결정 #3. 2026-09-10 확정. 재검토 없음 |
 
 ### BR-001-10 보충 `미결정`
 

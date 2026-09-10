@@ -1,4 +1,8 @@
+import { useEffect, useId, useRef } from 'react';
 import { Field } from '../shared/ui';
+
+// Cloudflare가 공개한 "항상 통과" 테스트 site key. 계정 없이 로컬 개발에 쓸 수 있다.
+const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA';
 
 export function CaptchaField({
   value,
@@ -7,32 +11,49 @@ export function CaptchaField({
   value: string;
   onChange: (value: string) => void;
 }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
+  const fieldId = useId();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const mount = () => {
+      if (cancelled || !containerRef.current || !window.turnstile) return;
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY || TURNSTILE_TEST_SITE_KEY,
+        callback: onChange,
+        'expired-callback': () => onChange(''),
+        'error-callback': () => onChange(''),
+      });
+    };
+
+    if (window.turnstile) {
+      mount();
+    } else {
+      // script는 async/defer 로 로드되므로 아직 준비 안 됐을 수 있다. ready()가 큐잉해준다.
+      const check = window.setInterval(() => {
+        if (window.turnstile) {
+          window.clearInterval(check);
+          window.turnstile.ready(mount);
+        }
+      }, 50);
+      return () => window.clearInterval(check);
+    }
+
+    return () => {
+      cancelled = true;
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(widgetIdRef.current);
+      }
+    };
+    // onChange는 부모의 useState setter라 참조가 안정적이다. 위젯을 매 렌더 재마운트하지 않기 위해 의도적으로 생략한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <Field
-      label="자동 가입 방지"
-      htmlFor="captcha-token"
-      hint="운영 환경에서는 CAPTCHA provider 위젯이 발급한 토큰을 사용합니다."
-    >
-      <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <label className="flex items-center gap-3 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={Boolean(value)}
-            onChange={event => onChange(event.target.checked ? (import.meta.env.VITE_CAPTCHA_TOKEN || 'dev-captcha') : '')}
-            className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-          />
-          저는 사람이 맞습니다.
-        </label>
-        <input
-          id="captcha-token"
-          type="text"
-          value={value}
-          onChange={event => onChange(event.target.value)}
-          placeholder="CAPTCHA 토큰"
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-          required
-        />
-      </div>
+    <Field label="자동 가입 방지" htmlFor={fieldId} hint="아래 위젯이 자동으로 CAPTCHA 검증을 처리합니다.">
+      <div ref={containerRef} id={fieldId} data-value={value ? 'verified' : undefined} />
     </Field>
   );
 }
