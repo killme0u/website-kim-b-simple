@@ -43,6 +43,7 @@ public class TempPasswordListener {
         try {
             Context context = new Context(Locale.KOREA, variables);
             mailSender.send(to, subject, templateEngine.process(template, context));
+            log.info("임시 비밀번호 메일 발송 성공. to={} subject={}", to, subject);
         } catch (RuntimeException e) {
             log.error("임시 비밀번호 메일 발송에 실패했습니다. to={} subject={}", to, subject, e);
         }

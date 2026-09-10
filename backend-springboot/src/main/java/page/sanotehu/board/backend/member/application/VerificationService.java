@@ -1,6 +1,7 @@
 package page.sanotehu.board.backend.member.application;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
@@ -20,6 +21,7 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VerificationService {
@@ -123,6 +125,9 @@ public class VerificationService {
         memberRepository.save(member);
 
         persistentTokenRepository.removeUserTokens(member.getUsername());
+
+        log.info("임시 비밀번호 발급 완료. memberId={} email={} expiresAt={}",
+                member.getId(), member.getEmail(), expiresAt);
 
         events.publishEvent(new TempPasswordIssued(member.getEmail(), tempPassword));
     }
