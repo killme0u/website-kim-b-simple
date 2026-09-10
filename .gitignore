@@ -6,6 +6,7 @@ build/
 # SMTP 계정 등 실제 값은 .env 에만 두고 커밋하지 않는다. 양식인 .env.example 만 커밋한다.
 .env
 .env.local
+.env.product
 !.env.example
 
 !gradle/wrapper/gradle-wrapper.jar
