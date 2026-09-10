@@ -31,8 +31,8 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=board_user
-      - POSTGRES_PASSWORD=board_password
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=board_db
     volumes:
       - board_data:/var/lib/postgresql/data
