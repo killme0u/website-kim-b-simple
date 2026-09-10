@@ -10,4 +10,7 @@ public class UsernameRecoveryCommand {
     @NotBlank
     @Email
     private String email;
+
+    @NotBlank
+    private String captchaToken;
 }
