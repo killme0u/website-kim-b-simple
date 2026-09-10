@@ -51,4 +51,10 @@ public class Board {
             throw new AuthenticationRequiredException("'%s' 게시판은 로그인 후 글을 쓸 수 있습니다.".formatted(this.name));
         }
     }
+
+    public void checkAttachmentAllowed(boolean hasAttachments) {
+        if (hasAttachments && !this.allowsAttachment) {
+            throw new IllegalArgumentException("'%s' 게시판에서는 파일 첨부를 허용하지 않습니다.".formatted(this.name));
+        }
+    }
 }

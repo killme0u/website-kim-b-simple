@@ -77,9 +77,12 @@ public class PostService {
         Optional<Member> actor = actorOf(user);
         board.checkWritable(actor);
 
+        boolean hasAttachments = cmd.getAttachments() != null && !cmd.getAttachments().isEmpty();
+        board.checkAttachmentAllowed(hasAttachments);
+
         Post post = actor.map(m -> Post.member(board, m, cmd.getTitle(), cmd.getContent()))
             .orElseGet(() -> Post.guest(board, cmd.getGuestNickname(), encoder.encode(cmd.getGuestPassword()), cmd.getTitle(), cmd.getContent()));
-        
+
         postRepository.save(post);
 
         if (cmd.getAttachments() != null) {

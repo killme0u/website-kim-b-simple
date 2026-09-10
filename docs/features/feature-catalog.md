@@ -74,7 +74,7 @@ provider 호출 실패·타임아웃·예외는 모두 `false`로 흡수됩니�
 | F-202 | 게시판 단건 조회 | `GET /api/boards/{slug}` | `Board.checkReadable` |
 | F-203 | 읽기 권한 정책 | 전 조회 API | `Board.checkReadable` |
 | F-204 | 쓰기 권한 정책 | 글·댓글 작성 | `Board.checkWritable` |
-| F-205 | 첨부 허용 정책 | — | **백엔드 미검증** `미결정` |
+| F-205 | 첨부 허용 정책 | `POST /api/boards/{slug}/posts` | `Board.checkAttachmentAllowed` |
 
 ## F-300 게시글
 
