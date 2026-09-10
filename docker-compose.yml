@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "${APP_HOST_PORT:-8080}:8080"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/board_db
       - SPRING_DATASOURCE_USERNAME=board_user
