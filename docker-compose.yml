@@ -20,6 +20,15 @@ services:
       - MAIL_FROM_ADMIN=${MAIL_FROM_ADMIN:-no-reply@localhost}
       - MAIL_DEBUG=${MAIL_DEBUG:-false}
       - APP_BASE_URL=${APP_BASE_URL:-http://localhost:8080}
+      # CAPTCHA 도 .env 에서 온다. 프런트가 Turnstile 위젯 토큰만 보내므로 mode 는 remote 여야
+      # 한다 - fake 로 두면 위젯이 "성공!" 이어도 서버가 전부 거절한다(회원가입 불가).
+      # SECRET 이 비면 remote 는 검증 실패로 닫힌다. 로컬 확인용 공개 테스트 secret 은
+      # .env.example 참고. 운영은 Cloudflare 대시보드에서 발급한 값을 .env 에 넣는다.
+      - CAPTCHA_MODE=${CAPTCHA_MODE:-remote}
+      - CAPTCHA_ENDPOINT=${CAPTCHA_ENDPOINT:-https://challenges.cloudflare.com/turnstile/v0/siteverify}
+      - CAPTCHA_SECRET=${CAPTCHA_SECRET:-}
+      - CAPTCHA_EXPECTED_TOKEN=${CAPTCHA_EXPECTED_TOKEN:-dev-captcha}
+      - CAPTCHA_TIMEOUT=${CAPTCHA_TIMEOUT:-5s}
     depends_on:
       - postgres
     volumes:

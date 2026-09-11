@@ -1,5 +1,30 @@
 # 할 일
 
+## D2026-09-11 9:52
+
+### 미구현
+
+
+### 검토
+
+- ~~회원가입 버튼을 누르면 "CAPTCHA 검증에 실패했습니다."로 실패~~ → **완료 (2026-09-11)**
+  - 증상: 위젯은 "성공!"인데 가입만 실패. 아이디 찾기·비밀번호 재설정·인증메일 재발송도 같은 원인.
+  - 원인: 프런트와 백엔드가 서로 다른 CAPTCHA 방식이었다. `CaptchaField.tsx`는 언제나 Turnstile
+    위젯 토큰을 보내는데(fake 경로가 없다), `.env`는 `CAPTCHA_MODE=fake`라 `ConfiguredCaptchaVerifier`가
+    `token.equals("dev-captcha")`로 판정해 항상 false였다. 위젯 성공과 서버 거절은 정확히 일관된 결과.
+  - 언제 깨졌나: 커밋 `d921647`에서 체크박스 필드(`dev-captcha`를 그대로 내보내 fake와 짝이 맞았다)를
+    실제 Turnstile 위젯으로 교체하면서 `.env`를 fake로 남겨 둔 것.
+  - 조치: `.env`·`.env.example`을 `mode=remote` + Cloudflare siteverify 엔드포인트 +
+    공개 테스트 secret(`1x00...0AA`)으로 전환. 프런트는 `VITE_TURNSTILE_SITE_KEY` 미설정 시
+    짝이 되는 테스트 site key(`1x00000000000000000000AA`)로 폴백하므로 둘이 맞는다.
+  - 함께 고친 것 — `docker-compose.yml`에 `CAPTCHA_*` passthrough 추가. `.dockerignore`가 `.env`를
+    이미지에서 빼고 compose도 `CAPTCHA_*`를 넘기지 않아서, `.env`만 고치면 컨테이너 배포에는
+    반영되지 않고 `application.yml`의 기본값 `fake`로 되돌아가 같은 버그가 남는 상태였다.
+  - 회귀 테스트: `ConfiguredCaptchaVerifierTest` 신규 6개. 그동안 CAPTCHA 테스트가 전부
+    `@MockitoBean CaptchaVerifier`로 목 처리를 해서 정작 판정 구현체는 한 번도 실행되지 않았다.
+  - 남은 것: `application.yml:78` 기본값이 아직 `${CAPTCHA_MODE:fake}`라 `.env`·compose 환경변수가
+    모두 없는 환경은 같은 버그를 재현한다. 운영 전에는 Cloudflare 실제 키로 교체 필요.
+
 ## D2026-09-10 5:54
 
 ### 미구현
