@@ -1,5 +1,19 @@
 # 할 일
 
+## D2026-09-11 11:30
+
+### 미구현
+
+
+### 검토
+
+- ~~게시물 조회 시 'LazyInitializationException: no session' 에러~~ → **완료 (2026-09-11)**
+  - 증상: Q&A/자료실 게시판에 게시물 등록 후 게시물 조회 시 500 에러, '게시글을 불러오지 못했습니다' 출력.
+  - 원인: Post.member가 @ManyToOne(fetch=LAZY)로 설정됨. PostResponse.from()에서 member.getUsername()을 접근하려 하는데
+    이 시점에 Hibernate 세션이 닫혀 lazy proxy 초기화 불가.
+  - 조치: Post.member를 FetchType.EAGER로 변경. PostResponse 생성 시 항상 Member가 필요하므로.
+  - 파일: Post.java:31
+
 ## D2026-09-11 11:19
 
 ### 미구현
