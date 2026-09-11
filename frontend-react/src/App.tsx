@@ -11,6 +11,7 @@ import { FindUsernamePage } from './pages/FindUsernamePage';
 import { FindPasswordPage } from './pages/FindPasswordPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { SearchResultsPage } from './pages/SearchResultsPage';
 import { useSessionSync } from './lib/session';
 
 export function App() {
@@ -21,6 +22,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<RootLayout />}>
           <Route index element={<HomePage />} />
+          <Route path="search" element={<SearchResultsPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="signup" element={<SignupPage />} />
           <Route path="verify-email" element={<VerifyEmailPage />} />

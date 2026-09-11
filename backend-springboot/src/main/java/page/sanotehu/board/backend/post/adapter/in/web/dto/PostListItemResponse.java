@@ -18,6 +18,7 @@ public class PostListItemResponse {
     private int viewCount;
     private int likeCount;
     private ZonedDateTime createdAt;
+    private String boardName;
 
     public static PostListItemResponse from(Post p) {
         return PostListItemResponse.builder()
@@ -27,6 +28,7 @@ public class PostListItemResponse {
                 .viewCount(p.getViewCount())
                 .likeCount(p.getLikeCount())
                 .createdAt(p.getCreatedAt())
+                .boardName(p.getBoard().getName())
                 .build();
     }
 }

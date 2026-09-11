@@ -36,6 +36,7 @@ export interface PostListItem {
   viewCount: number;
   likeCount: number;
   createdAt: string;
+  boardName?: string;
 }
 
 export interface Post extends PostListItem {

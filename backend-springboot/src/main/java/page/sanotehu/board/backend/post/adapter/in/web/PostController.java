@@ -29,6 +29,14 @@ public class PostController {
         return postService.listPosts(boardSlug, keyword, pageable, user);
     }
 
+    @GetMapping("/posts/search")
+    public Page<PostListItemResponse> searchGlobal(
+            @RequestParam(required = false) String keyword,
+            Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails user) {
+        return postService.searchGlobal(keyword, pageable, user);
+    }
+
     @PostMapping("/boards/{boardSlug}/posts")
     @ResponseStatus(HttpStatus.CREATED)
     public Map<String, Long> createPost(

@@ -44,6 +44,11 @@ public class PostService {
         return postRepository.search(boardSlug, keyword, pageable).map(PostListItemResponse::from);
     }
 
+    @Transactional(readOnly = true)
+    public Page<PostListItemResponse> searchGlobal(String keyword, Pageable pageable, CustomUserDetails user) {
+        return postRepository.searchGlobal(keyword, pageable).map(PostListItemResponse::from);
+    }
+
     @Transactional
     public PostResponse getPost(Long id, CustomUserDetails user) {
         Post post = postRepository.findById(id).filter(p -> p.getDeletedAt() == null).orElseThrow();

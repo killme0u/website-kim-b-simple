@@ -35,7 +35,7 @@ export function RootLayout() {
     const keyword = search.trim();
     if (!keyword) return;
     setSearchParams({ q: keyword, page: '0' });
-    navigate(`/boards/free?q=${encodeURIComponent(keyword)}&page=0`);
+    navigate(`/search?q=${encodeURIComponent(keyword)}&page=0`);
   };
 
   return (

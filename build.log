@@ -1,0 +1,29 @@
+> Task :backend-springboot:compileJava UP-TO-DATE
+> Task :frontend-react:nodeSetup UP-TO-DATE
+> Task :frontend-react:npmSetup SKIPPED
+> Task :frontend-react:npmInstall UP-TO-DATE
+
+> Task :frontend-react:buildFrontend
+
+> page.sanotehu.board.frontend@0.0.0 build
+> tsc -b && vite build
+
+src/pages/SearchResultsPage.tsx(1,1): error TS6133: 'useState' is declared but its value is never read.
+src/pages/SearchResultsPage.tsx(44,16): error TS2322: Type '"warning"' is not assignable to type '"error" | "info" | undefined'.
+
+> Task :frontend-react:buildFrontend FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':frontend-react:buildFrontend' (registered in build file 'frontend-react\build.gradle').
+> Process 'command 'D:\zz_my\work\idea\website-kim-b-simple\frontend-react\.gradle\nodejs\node-v22.20.0-win-x64\npm.cmd'' finished with non-zero exit value 2
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights from a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 6s
+4 actionable tasks: 1 executed, 3 up-to-date
