@@ -69,7 +69,9 @@ export function SignupPage() {
     event.preventDefault();
     setError('');
     if (!termsAccepted) return setError('필수 약관에 동의해 주세요.');
+    if (usernameAvailable === false) return setError('이미 사용 중인 아이디입니다.');
     if (usernameAvailable !== true) return setError('아이디 중복 확인을 완료해 주세요.');
+    if (trimmedNickname && nicknameAvailable === false) return setError('이미 사용 중인 닉네임입니다.');
     if (trimmedNickname && nicknameAvailable !== true) return setError('닉네임 중복 확인을 완료해 주세요.');
     if (password !== passwordConfirm) return setError('비밀번호가 일치하지 않습니다.');
     signup.mutate();
