@@ -99,7 +99,7 @@ export function BoardPage() {
             <tbody className="divide-y divide-slate-100">
               {posts.map(post => (
                 <tr key={post.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 text-slate-500">{post.id}</td>
+                  <td className="px-4 py-3 text-slate-500">{post.sequenceNumber ?? post.id}</td>
                   <td className="px-4 py-3 font-medium">
                     <Link to={`/posts/${post.id}`} className="text-indigo-600 hover:underline">{post.title}</Link>
                   </td>

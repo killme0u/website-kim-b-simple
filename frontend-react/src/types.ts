@@ -37,6 +37,7 @@ export interface PostListItem {
   likeCount: number;
   createdAt: string;
   boardName?: string;
+  sequenceNumber?: number;
 }
 
 export interface Post extends PostListItem {

@@ -19,6 +19,7 @@ public class PostListItemResponse {
     private int likeCount;
     private ZonedDateTime createdAt;
     private String boardName;
+    private Long sequenceNumber;
 
     public static PostListItemResponse from(Post p) {
         return PostListItemResponse.builder()

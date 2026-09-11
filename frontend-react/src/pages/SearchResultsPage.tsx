@@ -50,6 +50,7 @@ export function SearchResultsPage() {
               <table className="w-full min-w-[680px] text-left text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
+                    <th className="px-4 py-3 font-semibold">번호</th>
                     <th className="px-4 py-3 font-semibold">게시판</th>
                     <th className="px-4 py-3 font-semibold">제목</th>
                     <th className="px-4 py-3 font-semibold">작성자</th>
@@ -60,6 +61,7 @@ export function SearchResultsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {posts.map(post => (
                     <tr key={post.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 text-sm font-medium text-slate-900">{post.sequenceNumber ?? post.id}</td>
                       <td className="px-4 py-3 text-sm text-slate-500">{post.boardName}</td>
                       <td className="px-4 py-3 font-medium">
                         <Link to={`/posts/${post.id}`} className="text-indigo-600 hover:underline">{post.title}</Link>

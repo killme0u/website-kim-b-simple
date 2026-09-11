@@ -41,12 +41,22 @@ public class PostService {
         Board board = boardRepository.findBySlug(boardSlug).orElseThrow();
         Optional<Member> actor = actorOf(user);
         board.checkReadable(actor);
-        return postRepository.search(boardSlug, keyword, pageable).map(PostListItemResponse::from);
+        return postRepository.search(boardSlug, keyword, pageable).map(post -> {
+            PostListItemResponse response = PostListItemResponse.from(post);
+            long sequenceNumber = postRepository.countPostsAfter(boardSlug, post.getId()) + 1;
+            response.setSequenceNumber(sequenceNumber);
+            return response;
+        });
     }
 
     @Transactional(readOnly = true)
     public Page<PostListItemResponse> searchGlobal(String keyword, Pageable pageable, CustomUserDetails user) {
-        return postRepository.searchGlobal(keyword, pageable).map(PostListItemResponse::from);
+        return postRepository.searchGlobal(keyword, pageable).map(post -> {
+            PostListItemResponse response = PostListItemResponse.from(post);
+            long sequenceNumber = postRepository.countPostsAfter(post.getBoard().getSlug(), post.getId()) + 1;
+            response.setSequenceNumber(sequenceNumber);
+            return response;
+        });
     }
 
     @Transactional
