@@ -18,7 +18,7 @@
 
 ## 기술 스택
 - **Backend**: Java 25, Spring Boot 4.1.1, Spring Data JPA, Spring Security, Flyway
-- **Frontend**: TypeScript, React 19, Vite, Tailwind CSS 3, COSS UI, Zustand
+- **Frontend**: TypeScript, React 19, Vite, Tailwind CSS 4, COSS UI, Zustand
 - **Database**: PostgreSQL 15
 
 ### 프론트엔드 - COSS UI
