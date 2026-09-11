@@ -19,7 +19,7 @@ public class JsonAuthenticationFailureHandler implements AuthenticationFailureHa
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException, ServletException {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setContentType("application/json;charset=UTF-8");
         objectMapper.writeValue(response.getWriter(), ApiError.of("AUTH_FAILED", "아이디 또는 비밀번호가 잘못되었습니다."));
     }
 }

@@ -1,10 +1,14 @@
 package page.sanotehu.board.backend.board.adapter.in.web.dto;
 
 import lombok.Builder;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 import page.sanotehu.board.backend.board.domain.Board;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class BoardResponse {
     private String slug;

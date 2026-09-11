@@ -1,12 +1,16 @@
 package page.sanotehu.board.backend.comment.adapter.in.web.dto;
 
 import lombok.Builder;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 import page.sanotehu.board.backend.comment.domain.Comment;
 
 import java.time.ZonedDateTime;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class CommentResponse {
     private Long id;

@@ -1,12 +1,16 @@
 package page.sanotehu.board.backend.post.adapter.in.web.dto;
 
 import lombok.Builder;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 import page.sanotehu.board.backend.post.domain.Post;
 import java.time.ZonedDateTime;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class PostResponse {
     private Long id;

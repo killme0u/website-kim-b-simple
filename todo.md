@@ -1,5 +1,37 @@
 # 할 일
 
+## D2026-09-11 11:19
+
+### 미구현
+
+
+### 검토
+
+- ~~자료실 게시판에 이미지 첨부 시 'Cannot construct instance of FileResponse' 에러~~ → **완료 (2026-09-11)**
+  - 증상: 이미지 첨부 후 등록 버튼 → 500 에러, 로그: Jackson 역직렬화 실패
+  - 원인: FileResponse와 다른 Response DTO들이 @Builder만 있고
+    @NoArgsConstructor가 없어 Jackson이 기본 생성자를 못 찾음.
+  - 조치: 모든 Response DTO에 @NoArgsConstructor, @AllArgsConstructor 추가.
+  - 파일 6개:
+    FileResponse, BoardResponse, CommentResponse, MeResponse,
+    PostListItemResponse, PostResponse
+
+## D2026-09-11 11:16
+
+### 미구현
+
+
+### 검토
+
+- ~~로그인 화면 에러 메시지 깨짐(한글 문자 인코딩)~~ → **완료 (2026-09-11)**
+  - 증상: 로그인 실패 시 에러 메시지가 '??? ?? ????? ???????.'처럼 표시됨.
+  - 원인: JsonAuthenticationFailureHandler·JsonAuthenticationSuccessHandler에서
+    response.setContentType(APPLICATION_JSON_VALUE)만 지정 → charset=UTF-8 누락.
+  - 조치: application/json;charset=UTF-8로 명시.
+  - 파일: backend-springboot/src/main/java/page/sanotehu/board/backend/config/
+    JsonAuthenticationFailureHandler.java:22
+    JsonAuthenticationSuccessHandler.java:22
+
 ## D2026-09-11 10:06
 
 ### 미구현
